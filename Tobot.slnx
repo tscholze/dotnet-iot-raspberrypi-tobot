@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Tobot.Device/Tobot.Device.csproj" />
+  <Project Path="Tobot/Tobot.csproj" />
+</Solution>
