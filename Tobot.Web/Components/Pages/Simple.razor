@@ -1,0 +1,502 @@
+@page "/simple"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Tobot.Web.Hubs
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
+
+<PageTitle>Tobot - Simple Control</PageTitle>
+
+<div class="tobot-container">
+    <h1>Tobot Simple Control</h1>
+
+    <div class="status @(_isConnected ? "connected" : "disconnected")">
+        <strong>Status:</strong> @(_isConnected ? "Connected" : "Disconnected")
+    </div>
+
+    <section class="control-section">
+        <h2>🚗 Motor Control</h2>
+        
+        <div class="motor-group">
+            <h3>Motor 1</h3>
+            <div class="button-group">
+                <button @onclick="() => MoveMotorForward(1)" class="btn btn-forward">▲ Forward</button>
+                <button @onclick="() => StopMotor(1)" class="btn btn-stop">■ Stop</button>
+                <button @onclick="() => MoveMotorBackward(1)" class="btn btn-backward">▼ Backward</button>
+            </div>
+            <div class="speed-control">
+                <label>Speed: <input type="range" min="0" max="100" @bind="_motor1Speed" /> @_motor1Speed%</label>
+            </div>
+            <div class="status-text">
+                <small>Current: @_motor1CurrentSpeed</small>
+            </div>
+        </div>
+
+        <div class="motor-group">
+            <h3>Motor 2</h3>
+            <div class="button-group">
+                <button @onclick="() => MoveMotorForward(2)" class="btn btn-forward">▲ Forward</button>
+                <button @onclick="() => StopMotor(2)" class="btn btn-stop">■ Stop</button>
+                <button @onclick="() => MoveMotorBackward(2)" class="btn btn-backward">▼ Backward</button>
+            </div>
+            <div class="speed-control">
+                <label>Speed: <input type="range" min="0" max="100" @bind="_motor2Speed" /> @_motor2Speed%</label>
+            </div>
+            <div class="status-text">
+                <small>Current: @_motor2CurrentSpeed</small>
+            </div>
+        </div>
+
+        <button @onclick="StopAllMotors" class="btn btn-stop-all">🛑 STOP ALL MOTORS</button>
+    </section>
+
+    <section class="control-section">
+        <h2>💡 LED Control</h2>
+        <div class="grid-4">
+            @for (int i = 1; i <= 4; i++)
+            {
+                var ledNum = i;
+                <div class="control-item">
+                    <div class="item-label">LED @ledNum</div>
+                    <div class="button-stack">
+                        <button @onclick="() => TurnLedOn(ledNum)" class="btn-small btn-on">ON</button>
+                        <button @onclick="() => TurnLedOff(ledNum)" class="btn-small btn-off">OFF</button>
+                        <button @onclick="() => ToggleLed(ledNum)" class="btn-small btn-toggle">TOGGLE</button>
+                    </div>
+                    <div class="item-status">@_ledStates[ledNum - 1]</div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="control-section">
+        <h2>🔌 Digital Output Control</h2>
+        <div class="grid-4">
+            @for (int i = 1; i <= 4; i++)
+            {
+                var outputNum = i;
+                <div class="control-item">
+                    <div class="item-label">Output @outputNum</div>
+                    <div class="button-stack">
+                        <button @onclick="() => TurnOutputOn(outputNum)" class="btn-small btn-on">ON</button>
+                        <button @onclick="() => TurnOutputOff(outputNum)" class="btn-small btn-off">OFF</button>
+                        <button @onclick="() => ToggleOutput(outputNum)" class="btn-small btn-toggle">TOGGLE</button>
+                    </div>
+                    <div class="item-status">@_outputStates[outputNum - 1]</div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="control-section log-section">
+        <h2>📋 Event Log</h2>
+        <div class="log-content">
+            @foreach (var log in _eventLog.AsEnumerable().Reverse().Take(10))
+            {
+                <div>@log</div>
+            }
+        </div>
+    </section>
+</div>
+
+<style>
+    .tobot-container {
+        max-width: 800px;
+        margin: 20px auto;
+        font-family: sans-serif;
+    }
+
+    .status {
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+
+    .status.connected {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status.disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .control-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .motor-group {
+        margin-bottom: 20px;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-forward {
+        background: #28a745;
+    }
+
+    .btn-stop {
+        background: #dc3545;
+    }
+
+    .btn-backward {
+        background: #ffc107;
+        color: black;
+    }
+
+    .btn-stop-all {
+        padding: 12px 30px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .speed-control {
+        margin-top: 10px;
+    }
+
+    .speed-control input[type="range"] {
+        width: 200px;
+    }
+
+    .status-text {
+        margin-top: 5px;
+        color: #666;
+    }
+
+    .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+
+    .control-item {
+        text-align: center;
+    }
+
+    .item-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .button-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .btn-small {
+        padding: 8px;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .btn-on {
+        background: #28a745;
+    }
+
+    .btn-off {
+        background: #6c757d;
+    }
+
+    .btn-toggle {
+        background: #007bff;
+    }
+
+    .item-status {
+        margin-top: 5px;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .log-section {
+        background: #f8f9fa;
+    }
+
+    .log-content {
+        max-height: 200px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        background: white;
+        padding: 10px;
+        border-radius: 3px;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// SignalR hub connection for communicating with TobotHub.
+    /// </summary>
+    private HubConnection? _hubConnection;
+    
+    /// <summary>
+    /// Indicates whether the SignalR connection is established.
+    /// </summary>
+    private bool _isConnected = false;
+    
+    /// <summary>
+    /// Log of all events received from the hub.
+    /// </summary>
+    private List<string> _eventLog = new();
+    
+    /// <summary>
+    /// Desired speed for motor 1 (0-100).
+    /// </summary>
+    private double _motor1Speed = 50;
+    
+    /// <summary>
+    /// Desired speed for motor 2 (0-100).
+    /// </summary>
+    private double _motor2Speed = 50;
+    
+    /// <summary>
+    /// Current speed of motor 1 as reported by the hub.
+    /// </summary>
+    private string _motor1CurrentSpeed = "0";
+    
+    /// <summary>
+    /// Current speed of motor 2 as reported by the hub.
+    /// </summary>
+    private string _motor2CurrentSpeed = "0";
+    
+    /// <summary>
+    /// State of each LED (1-4).
+    /// </summary>
+    private string[] _ledStates = new[] { "Unknown", "Unknown", "Unknown", "Unknown" };
+    
+    /// <summary>
+    /// State of each digital output (1-4).
+    /// </summary>
+    private string[] _outputStates = new[] { "Unknown", "Unknown", "Unknown", "Unknown" };
+
+    /// <summary>
+    /// Initializes the SignalR connection and subscribes to all hub events.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
+            .Build();
+
+        // Subscribe to all events from TobotHubEvents
+        _hubConnection.On<int, double>(TobotHubEvents.MotorSpeedChanged, (motorNumber, speed) =>
+        {
+            AddLog($"{TobotHubEvents.MotorSpeedChanged}: Motor {motorNumber} = {speed}");
+            if (motorNumber == 1)
+                _motor1CurrentSpeed = $"{speed:F0}";
+            else if (motorNumber == 2)
+                _motor2CurrentSpeed = $"{speed:F0}";
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(TobotHubEvents.AllMotorsStopped, () =>
+        {
+            AddLog($"{TobotHubEvents.AllMotorsStopped}: All motors stopped");
+            _motor1CurrentSpeed = "0";
+            _motor2CurrentSpeed = "0";
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<int, bool>(TobotHubEvents.LedStateChanged, (ledNumber, isOn) =>
+        {
+            AddLog($"{TobotHubEvents.LedStateChanged}: LED {ledNumber} = {(isOn ? "ON" : "OFF")}");
+            _ledStates[ledNumber - 1] = isOn ? "ON" : "OFF";
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<int>(TobotHubEvents.LedToggled, (ledNumber) =>
+        {
+            AddLog($"{TobotHubEvents.LedToggled}: LED {ledNumber} toggled");
+            _ledStates[ledNumber - 1] = "Toggled";
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<int, bool>(TobotHubEvents.OutputStateChanged, (outputNumber, isOn) =>
+        {
+            AddLog($"{TobotHubEvents.OutputStateChanged}: Output {outputNumber} = {(isOn ? "ON" : "OFF")}");
+            _outputStates[outputNumber - 1] = isOn ? "ON" : "OFF";
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<int>(TobotHubEvents.OutputToggled, (outputNumber) =>
+        {
+            AddLog($"{TobotHubEvents.OutputToggled}: Output {outputNumber} toggled");
+            _outputStates[outputNumber - 1] = "Toggled";
+            InvokeAsync(StateHasChanged);
+        });
+
+        try
+        {
+            await _hubConnection.StartAsync();
+            _isConnected = true;
+            AddLog("Connected to TobotHub");
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Error connecting: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Adds a timestamped message to the event log.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    private void AddLog(string message)
+    {
+        _eventLog.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
+    }
+
+    /// <summary>
+    /// Moves the specified motor forward at the configured speed.
+    /// </summary>
+    /// <param name="motorNumber">Motor number (1 or 2).</param>
+    private async Task MoveMotorForward(int motorNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            var speed = motorNumber == 1 ? _motor1Speed : _motor2Speed;
+            await _hubConnection.InvokeAsync("MoveMotorForward", motorNumber, speed);
+        }
+    }
+
+    /// <summary>
+    /// Moves the specified motor backward at the configured speed.
+    /// </summary>
+    /// <param name="motorNumber">Motor number (1 or 2).</param>
+    private async Task MoveMotorBackward(int motorNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            var speed = motorNumber == 1 ? _motor1Speed : _motor2Speed;
+            await _hubConnection.InvokeAsync("MoveMotorBackward", motorNumber, speed);
+        }
+    }
+
+    /// <summary>
+    /// Stops the specified motor.
+    /// </summary>
+    /// <param name="motorNumber">Motor number (1 or 2).</param>
+    private async Task StopMotor(int motorNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("StopMotor", motorNumber);
+        }
+    }
+
+    /// <summary>
+    /// Stops all motors simultaneously.
+    /// </summary>
+    private async Task StopAllMotors()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("StopAllMotors");
+        }
+    }
+
+    /// <summary>
+    /// Turns on the specified LED.
+    /// </summary>
+    /// <param name="ledNumber">LED number (1-4).</param>
+    private async Task TurnLedOn(int ledNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("TurnLedOn", ledNumber);
+        }
+    }
+
+    /// <summary>
+    /// Turns off the specified LED.
+    /// </summary>
+    /// <param name="ledNumber">LED number (1-4).</param>
+    private async Task TurnLedOff(int ledNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("TurnLedOff", ledNumber);
+        }
+    }
+
+    /// <summary>
+    /// Toggles the specified LED.
+    /// </summary>
+    /// <param name="ledNumber">LED number (1-4).</param>
+    private async Task ToggleLed(int ledNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("ToggleLed", ledNumber);
+        }
+    }
+
+    /// <summary>
+    /// Turns on the specified digital output.
+    /// </summary>
+    /// <param name="outputNumber">Output number (1-4).</param>
+    private async Task TurnOutputOn(int outputNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("TurnOutputOn", outputNumber);
+        }
+    }
+
+    /// <summary>
+    /// Turns off the specified digital output.
+    /// </summary>
+    /// <param name="outputNumber">Output number (1-4).</param>
+    private async Task TurnOutputOff(int outputNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("TurnOutputOff", outputNumber);
+        }
+    }
+
+    /// <summary>
+    /// Toggles the specified digital output.
+    /// </summary>
+    /// <param name="outputNumber">Output number (1-4).</param>
+    private async Task ToggleOutput(int outputNumber)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("ToggleOutput", outputNumber);
+        }
+    }
+
+    /// <summary>
+    /// Disposes the SignalR hub connection.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

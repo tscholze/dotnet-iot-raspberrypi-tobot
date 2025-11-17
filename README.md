@@ -59,21 +59,21 @@ if (hat.Touch[1].IsTouched())
 
 ---
 
-## ?? What's Included?
+## 🎯 What's Included?
 
-### ?? Tobot.Device Library
+### 📦 Tobot.Device Library
 
 A professional-grade driver library for the Explorer HAT with:
 
 | Package | Components | Description |
 |---------|-----------|-------------|
-| **?? Motor** | `Motor`, `MotorCollection` | H-bridge motor control with variable speed |
-| **?? LED** | `Led`, `LedCollection` | Onboard LED control and patterns |
-| **?? Analog** | `AnalogInput`, `AnalogInputCollection` | 0-5V analog input via ADS1015 ADC |
-| **?? Digital** | `DigitalInput/Output`, Collections | Digital I/O with event support |
-| **?? Touch** | `TouchSensor`, `TouchCollection` | Capacitive touch via CAP1208 |
+| **🚗 Motor** | `Motor`, `MotorCollection` | H-bridge motor control with variable speed |
+| **💡 LED** | `Led`, `LedCollection` | Onboard LED control and patterns |
+| **📊 Analog** | `AnalogInput`, `AnalogInputCollection` | 0-5V analog input via ADS1015 ADC |
+| **🔌 Digital** | `DigitalInput/Output`, Collections | Digital I/O with event support |
+| **👆 Touch** | `TouchSensor`, `TouchCollection` | Capacitive touch via CAP1208 |
 
-### ?? Tobot Demo Application
+### 🎮 Tobot Console Application
 
 An interactive showcase featuring:
 
@@ -85,6 +85,19 @@ An interactive showcase featuring:
 - **Touch Demo** - Capacitive touch detection
 - **Robot System** - Complete autonomous control
 - **System Check** - Hardware diagnostics
+
+### 🌐 Tobot.Web Application
+
+A modern web-based control interface featuring:
+
+- **SignalR Integration** - Real-time bidirectional communication
+- **Remote Control** - Control your robot from any device on the network
+- **Live Updates** - Receive real-time feedback from all sensors and actuators
+- **Interactive UI** - Clean, responsive Blazor interface
+- **Event Monitoring** - Track all robot actions in real-time
+- **Multi-Device Support** - Access from phones, tablets, or computers
+
+Access the web interface at `http://[raspberry-pi-ip]:5247/simple`
 
 ---
 
@@ -133,7 +146,7 @@ Tobot follows a clean, modular architecture:
 
 ```
 Tobot/
-??? ?? Tobot/                          Main demo application
+??? ?? Tobot/                          Console demo application
 ?   ??? Program.cs                     Interactive demos
 ?   ??? README.md                      Usage guide
 ?   ??? QUICKSTART.md                  5-minute setup
@@ -146,6 +159,15 @@ Tobot/
         ??? Analog/                    Analog input package
         ??? Digital/                   Digital I/O package
         ??? Touch/                     Touch sensor package
+│
+└── 🌐 Tobot.Web/                      Web control interface
+    ├── Program.cs                     ASP.NET Core application
+    ├── Hubs/                          SignalR hubs
+    │   ├── TobotHub.cs                Main control hub
+    │   └── TobotHubEvents.cs          Event constants
+    └── Components/                    Blazor UI components
+        └── Pages/                     Web pages
+            └── Simple.razor           Control interface
 ```
 
 ### Key Design Principles
