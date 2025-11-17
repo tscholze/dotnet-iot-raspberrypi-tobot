@@ -1,5 +1,6 @@
 using System;
 using System.Device.Gpio;
+using System.Device.Pwm;
 
 namespace Tobot.Device.ExplorerHat.Motor
 {
@@ -10,7 +11,10 @@ namespace Tobot.Device.ExplorerHat.Motor
     {
         private readonly GpioController _controller;
         private readonly MotorPinMapping _pins;
+        private readonly PwmChannel _pwmForward;
+        private readonly PwmChannel _pwmBackward;
         private double _speed;
+        private const int PwmFrequency = 1000; // 1kHz PWM frequency
 
         /// <summary>
         /// Gets the motor number (1-based).
@@ -29,11 +33,13 @@ namespace Tobot.Device.ExplorerHat.Motor
             _pins = pins;
             Number = number;
 
-            // Initialize pins
-            if (!_controller.IsPinOpen(_pins.Forward))
-                _controller.OpenPin(_pins.Forward, PinMode.Output);
-            if (!_controller.IsPinOpen(_pins.Backward))
-                _controller.OpenPin(_pins.Backward, PinMode.Output);
+            // Initialize PWM channels for both forward and backward pins
+            // Using chip 0 (hardware PWM on Raspberry Pi)
+            _pwmForward = PwmChannel.Create(0, _pins.Forward, PwmFrequency);
+            _pwmBackward = PwmChannel.Create(0, _pins.Backward, PwmFrequency);
+            
+            _pwmForward.Start();
+            _pwmBackward.Start();
 
             Stop();
         }
@@ -52,16 +58,21 @@ namespace Tobot.Device.ExplorerHat.Motor
                 return;
             }
 
-            // DRV8833PWP H-Bridge control: set one direction HIGH, other LOW
+            // DRV8833PWP H-Bridge control with PWM for speed control
+            // Convert speed percentage to duty cycle (0.0 to 1.0)
+            double dutyCycle = Math.Abs(_speed) / 100.0;
+            
             if (_speed > 0)
             {
-                _controller.Write(_pins.Backward, PinValue.Low);
-                _controller.Write(_pins.Forward, PinValue.High);
+                // Forward: PWM on forward pin, backward pin off
+                _pwmBackward.DutyCycle = 0;
+                _pwmForward.DutyCycle = dutyCycle;
             }
             else
             {
-                _controller.Write(_pins.Forward, PinValue.Low);
-                _controller.Write(_pins.Backward, PinValue.High);
+                // Backward: PWM on backward pin, forward pin off
+                _pwmForward.DutyCycle = 0;
+                _pwmBackward.DutyCycle = dutyCycle;
             }
         }
 
@@ -83,8 +94,8 @@ namespace Tobot.Device.ExplorerHat.Motor
         public void Stop()
         {
             _speed = 0;
-            _controller.Write(_pins.Forward, PinValue.Low);
-            _controller.Write(_pins.Backward, PinValue.Low);
+            _pwmForward.DutyCycle = 0;
+            _pwmBackward.DutyCycle = 0;
         }
 
         /// <summary>
@@ -93,10 +104,10 @@ namespace Tobot.Device.ExplorerHat.Motor
         public void Dispose()
         {
             Stop();
-            if (_controller.IsPinOpen(_pins.Forward))
-                _controller.ClosePin(_pins.Forward);
-            if (_controller.IsPinOpen(_pins.Backward))
-                _controller.ClosePin(_pins.Backward);
+            _pwmForward.Stop();
+            _pwmBackward.Stop();
+            _pwmForward.Dispose();
+            _pwmBackward.Dispose();
         }
     }
 }
