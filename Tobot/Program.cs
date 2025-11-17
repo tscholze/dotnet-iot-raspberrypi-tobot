@@ -361,7 +361,6 @@ class Program
         Console.WriteLine("🤖 Motor Control Demo");
         Console.WriteLine("═══════════════════════════════════════");
         Console.WriteLine("Testing motor drivers...\n");
-        Console.WriteLine("⚠️  Ensure motors are properly connected!\n");
 
         try
         {
