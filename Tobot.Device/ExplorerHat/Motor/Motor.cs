@@ -1,6 +1,7 @@
 using System;
 using System.Device.Gpio;
-using System.Device.Pwm;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Tobot.Device.ExplorerHat.Motor
 {
@@ -11,10 +12,10 @@ namespace Tobot.Device.ExplorerHat.Motor
     {
         private readonly GpioController _controller;
         private readonly MotorPinMapping _pins;
-        private readonly PwmChannel _pwmForward;
-        private readonly PwmChannel _pwmBackward;
         private double _speed;
-        private const int PwmFrequency = 1000; // 1kHz PWM frequency
+        private const int PwmFrequency = 100; // 100 Hz PWM frequency
+        private CancellationTokenSource? _pwmCancellation;
+        private Task? _pwmTask;
 
         /// <summary>
         /// Gets the motor number (1-based).
@@ -33,13 +34,11 @@ namespace Tobot.Device.ExplorerHat.Motor
             _pins = pins;
             Number = number;
 
-            // Initialize PWM channels for both forward and backward pins
-            // Using chip 0 (hardware PWM on Raspberry Pi)
-            _pwmForward = PwmChannel.Create(0, _pins.Forward, PwmFrequency);
-            _pwmBackward = PwmChannel.Create(0, _pins.Backward, PwmFrequency);
-            
-            _pwmForward.Start();
-            _pwmBackward.Start();
+            // Initialize pins for software PWM
+            if (!_controller.IsPinOpen(_pins.Forward))
+                _controller.OpenPin(_pins.Forward, PinMode.Output);
+            if (!_controller.IsPinOpen(_pins.Backward))
+                _controller.OpenPin(_pins.Backward, PinMode.Output);
 
             Stop();
         }
@@ -52,28 +51,56 @@ namespace Tobot.Device.ExplorerHat.Motor
         {
             _speed = Math.Clamp(speed, -100, 100);
 
+            // Stop any existing PWM task
+            _pwmCancellation?.Cancel();
+            _pwmTask?.Wait();
+
             if (Math.Abs(_speed) < 0.01)
             {
                 Stop();
                 return;
             }
 
-            // DRV8833PWP H-Bridge control with PWM for speed control
-            // Convert speed percentage to duty cycle (0.0 to 1.0)
-            double dutyCycle = Math.Abs(_speed) / 100.0;
+            // Start software PWM
+            _pwmCancellation = new CancellationTokenSource();
+            var dutyCycle = Math.Abs(_speed) / 100.0;
+            var isForward = _speed > 0;
             
-            if (_speed > 0)
+            _pwmTask = Task.Run(() => SoftwarePwm(isForward, dutyCycle, _pwmCancellation.Token));
+        }
+
+        /// <summary>
+        /// Software PWM implementation.
+        /// </summary>
+        private void SoftwarePwm(bool forward, double dutyCycle, CancellationToken cancellationToken)
+        {
+            var periodMs = 1000.0 / PwmFrequency;
+            var onTimeMs = periodMs * dutyCycle;
+            var offTimeMs = periodMs - onTimeMs;
+
+            var activePin = forward ? _pins.Forward : _pins.Backward;
+            var inactivePin = forward ? _pins.Backward : _pins.Forward;
+
+            // Keep inactive pin low
+            _controller.Write(inactivePin, PinValue.Low);
+
+            while (!cancellationToken.IsCancellationRequested)
             {
-                // Forward: PWM on forward pin, backward pin off
-                _pwmBackward.DutyCycle = 0;
-                _pwmForward.DutyCycle = dutyCycle;
+                if (onTimeMs > 0)
+                {
+                    _controller.Write(activePin, PinValue.High);
+                    Thread.Sleep(TimeSpan.FromMilliseconds(onTimeMs));
+                }
+
+                if (offTimeMs > 0 && !cancellationToken.IsCancellationRequested)
+                {
+                    _controller.Write(activePin, PinValue.Low);
+                    Thread.Sleep(TimeSpan.FromMilliseconds(offTimeMs));
+                }
             }
-            else
-            {
-                // Backward: PWM on backward pin, forward pin off
-                _pwmForward.DutyCycle = 0;
-                _pwmBackward.DutyCycle = dutyCycle;
-            }
+
+            // Ensure pin is low when stopped
+            _controller.Write(activePin, PinValue.Low);
         }
 
         /// <summary>
@@ -94,8 +121,10 @@ namespace Tobot.Device.ExplorerHat.Motor
         public void Stop()
         {
             _speed = 0;
-            _pwmForward.DutyCycle = 0;
-            _pwmBackward.DutyCycle = 0;
+            _pwmCancellation?.Cancel();
+            _pwmTask?.Wait();
+            _controller.Write(_pins.Forward, PinValue.Low);
+            _controller.Write(_pins.Backward, PinValue.Low);
         }
 
         /// <summary>
@@ -104,10 +133,12 @@ namespace Tobot.Device.ExplorerHat.Motor
         public void Dispose()
         {
             Stop();
-            _pwmForward.Stop();
-            _pwmBackward.Stop();
-            _pwmForward.Dispose();
-            _pwmBackward.Dispose();
+            _pwmCancellation?.Dispose();
+            
+            if (_controller.IsPinOpen(_pins.Forward))
+                _controller.ClosePin(_pins.Forward);
+            if (_controller.IsPinOpen(_pins.Backward))
+                _controller.ClosePin(_pins.Backward);
         }
     }
 }
