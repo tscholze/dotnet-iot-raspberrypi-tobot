@@ -30,8 +30,6 @@ namespace Tobot.Device.ExplorerHat.Motor
             Number = number;
 
             // Initialize pins
-            if (!_controller.IsPinOpen(_pins.Enable))
-                _controller.OpenPin(_pins.Enable, PinMode.Output);
             if (!_controller.IsPinOpen(_pins.Forward))
                 _controller.OpenPin(_pins.Forward, PinMode.Output);
             if (!_controller.IsPinOpen(_pins.Backward))
@@ -54,13 +52,17 @@ namespace Tobot.Device.ExplorerHat.Motor
                 return;
             }
 
-            bool forward = _speed > 0;
-            _controller.Write(_pins.Forward, forward ? PinValue.High : PinValue.Low);
-            _controller.Write(_pins.Backward, forward ? PinValue.Low : PinValue.High);
-            
-            // In a real implementation, you would use PWM on the enable pin
-            // For now, just turn it on
-            _controller.Write(_pins.Enable, PinValue.High);
+            // DRV8833PWP H-Bridge control: set one direction HIGH, other LOW
+            if (_speed > 0)
+            {
+                _controller.Write(_pins.Backward, PinValue.Low);
+                _controller.Write(_pins.Forward, PinValue.High);
+            }
+            else
+            {
+                _controller.Write(_pins.Forward, PinValue.Low);
+                _controller.Write(_pins.Backward, PinValue.High);
+            }
         }
 
         /// <summary>
@@ -81,7 +83,6 @@ namespace Tobot.Device.ExplorerHat.Motor
         public void Stop()
         {
             _speed = 0;
-            _controller.Write(_pins.Enable, PinValue.Low);
             _controller.Write(_pins.Forward, PinValue.Low);
             _controller.Write(_pins.Backward, PinValue.Low);
         }
@@ -92,8 +93,6 @@ namespace Tobot.Device.ExplorerHat.Motor
         public void Dispose()
         {
             Stop();
-            if (_controller.IsPinOpen(_pins.Enable))
-                _controller.ClosePin(_pins.Enable);
             if (_controller.IsPinOpen(_pins.Forward))
                 _controller.ClosePin(_pins.Forward);
             if (_controller.IsPinOpen(_pins.Backward))

@@ -72,12 +72,10 @@ namespace Tobot.Device.ExplorerHat
 
         /// <summary>
         /// GPIO pin numbers for motor control.
-        /// Note: The DRV8833PWP H-Bridge doesn't use separate enable pins.
-        /// Python library uses PWM on forward/backward pins directly.
-        /// Using forward pin as enable for compatibility with current implementation.
+        /// DRV8833PWP H-Bridge uses only forward/backward pins (no separate enable).
         /// </summary>
-        private static readonly MotorPinMapping Motor1Pins = new(20, 20, 19); // Enable=M1F(20), Forward=M1F(20), Backward=M1B(19)
-        private static readonly MotorPinMapping Motor2Pins = new(26, 26, 21); // Enable=M2F(26), Forward=M2F(26), Backward=M2B(21)
+        private static readonly MotorPinMapping Motor1Pins = new(20, 19); // M1F=20, M1B=19
+        private static readonly MotorPinMapping Motor2Pins = new(26, 21); // M2F=26, M2B=21
 
         #endregion
 
