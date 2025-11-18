@@ -68,8 +68,30 @@ until curl -fsS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; do
 done
 echo " done."
 
+# Ensure we have a GUI display available (X11)
+if [ -z "${DISPLAY:-}" ]; then
+  if [ -S /tmp/.X11-unix/X0 ]; then
+    export DISPLAY=:0
+  fi
+fi
+
+# If still no DISPLAY, provide guidance and exit gracefully
+if [ -z "${DISPLAY:-}" ]; then
+  echo "Error: no DISPLAY environment available for GUI browser." >&2
+  echo "Hints:" >&2
+  echo "- Run this script from the Raspberry Pi desktop session (not over SSH), or" >&2
+  echo "- Export DISPLAY=:0 in the same user session that owns the desktop, or" >&2
+  echo "- Wrap launch with: DISPLAY=:0 ${FIREFOX_BIN} --kiosk ${URL_PATH}, or" >&2
+  echo "- Create a user systemd service that sets DISPLAY=:0 and runs after graphical-session.target" >&2
+  echo "The web app is running; open ${URL_PATH} from any device on the network." >&2
+  # Keep following logs so the app keeps running
+  echo "Logs: tail -f ${DOTNET_LOG} (Ctrl+C to stop)"
+  tail -f "${DOTNET_LOG}"
+  exit 0
+fi
+
 # Open Firefox in kiosk mode to the Simple page
-echo "Launching ${FIREFOX_BIN} in kiosk mode at ${URL_PATH} ..."
+echo "Launching ${FIREFOX_BIN} in kiosk mode at ${URL_PATH} on DISPLAY=${DISPLAY} ..."
 ( set -x; "${FIREFOX_BIN}" --kiosk "${URL_PATH}" ) &
 
 # Follow the dotnet output so the script stays attached
