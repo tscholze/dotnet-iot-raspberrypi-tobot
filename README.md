@@ -1,4 +1,4 @@
-# ?? Tobot - Explorer HAT for .NET
+# 🤖 Tobot - Explorer HAT for .NET
 
 > **Modern robotics meets modern .NET** - A comprehensive C# driver and demo platform for the Pimoroni Explorer HAT on Raspberry Pi
 
@@ -13,18 +13,18 @@
 
 **Tobot** is a complete .NET robotics platform that brings the power of modern C# to the Raspberry Pi and the beloved Pimoroni Explorer HAT. Whether you're building your first robot, teaching programming, or creating a sophisticated autonomous system, Tobot provides everything you need in a clean, intuitive API.
 
-### ?? Why Tobot?
+### ✨ Why Tobot?
 
-- **?? Modern C#** - Leverage C# 13 and .NET 9 features for robotics
-- **?? Package-Based Architecture** - Logical organization by functionality
-- **?? Comprehensive Documentation** - XML docs on every member, extensive guides
-- **?? Ready-to-Run Demos** - Interactive examples for every feature
-- **?? Production Ready** - Robust error handling and resource management
-- **?? Educational** - Perfect for learning robotics and C# together
+- **⚡ Modern C#** - Leverage C# 13 and .NET 9 features for robotics
+- **📦 Package-Based Architecture** - Logical organization by functionality
+- **📚 Comprehensive Documentation** - XML docs on every member, extensive guides
+- **🎯 Ready-to-Run Demos** - Interactive examples for every feature
+- **✅ Production Ready** - Robust error handling and resource management
+- **🎓 Educational** - Perfect for learning robotics and C# together
 
 ---
 
-## ?? Quick Demo
+## ⚡ Quick Demo
 
 ```csharp
 using Tobot.Device.ExplorerHat;
@@ -101,7 +101,7 @@ Access the web interface at `http://[raspberry-pi-ip]:5247/simple`
 
 ---
 
-## ?? Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -136,11 +136,11 @@ dotnet run --project Tobot led
 dotnet run --project Tobot robot
 ```
 
-?? **Detailed instructions:** See [Tobot/QUICKSTART.md](Tobot/QUICKSTART.md)
+📖 **Detailed instructions:** See [Tobot/QUICKSTART.md](Tobot/QUICKSTART.md)
 
 ---
 
-## ??? Architecture
+## 🏛️ Architecture
 
 Tobot follows a clean, modular architecture:
 
@@ -180,9 +180,9 @@ Tobot/
 
 ---
 
-## ?? Features & Capabilities
+## 🎯 Features & Capabilities
 
-### ?? Motor Control
+### 🚗 Motor Control
 ```csharp
 hat.Motor.One.Forward(100);      // Full speed ahead
 hat.Motor.One.SetSpeed(75);      // 75% forward
@@ -190,14 +190,14 @@ hat.Motor.One.SetSpeed(-50);     // 50% backward
 hat.Motor.Stop();                // Emergency stop
 ```
 
-### ?? LED Control
+### 💡 LED Control
 ```csharp
 hat.Light.One.On();              // Individual LED
 hat.Light.On();                  // All LEDs
 hat.Light.Two.Toggle();          // Toggle state
 ```
 
-### ?? Digital I/O
+### 🔌 Digital I/O
 ```csharp
 // Read input
 bool state = hat.Input.One.Read();
@@ -211,13 +211,13 @@ hat.Output.One.On();
 hat.Output.Toggle();
 ```
 
-### ?? Analog Input (0-5V)
+### 📊 Analog Input (0-5V)
 ```csharp
 double voltage = hat.Analog.One.Read();
 Console.WriteLine($"Voltage: {voltage:F2}V");
 ```
 
-### ?? Capacitive Touch
+### 👆 Capacitive Touch
 ```csharp
 if (hat.Touch[1].IsTouched())
 {
@@ -229,7 +229,7 @@ byte allSensors = hat.Touch.ReadAll();
 
 ---
 
-## ?? Documentation
+## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -241,7 +241,7 @@ byte allSensors = hat.Touch.ReadAll();
 
 ---
 
-## ?? Learning Resources
+## 📖 Learning Resources
 
 ### Example Projects
 
@@ -280,7 +280,7 @@ All demos in `Tobot/Program.cs` are fully commented and ready to modify. Each ex
 
 ---
 
-## ?? Hardware Specifications
+## 🔧 Hardware Specifications
 
 ### Explorer HAT Features
 
@@ -296,7 +296,7 @@ All demos in `Tobot/Program.cs` are fully commented and ready to modify. Each ex
 ### Pin Mapping
 
 <details>
-<summary>?? Click to view complete pin mapping</summary>
+<summary>🔍 Click to view complete pin mapping</summary>
 
 #### Digital Inputs (BCM GPIO)
 - Input 1: GPIO 23
@@ -328,7 +328,7 @@ All demos in `Tobot/Program.cs` are fully commented and ready to modify. Each ex
 
 ---
 
-## ??? Advanced Usage
+## ⚙️ Advanced Usage
 
 ### Custom Robot Control Loop
 
@@ -391,21 +391,21 @@ public async Task MonitorSensorsAsync(CancellationToken ct)
 
 ---
 
-## ?? Contributing
+## 🤝 Contributing
 
 We welcome contributions! Whether it's:
 
-- ?? Bug reports
-- ?? Feature requests  
-- ?? Documentation improvements
-- ?? Code examples
-- ?? Driver enhancements
+- 🐛 Bug reports
+- 💡 Feature requests  
+- 📝 Documentation improvements
+- 💻 Code examples
+- 🔧 Driver enhancements
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## ?? Roadmap
+## 🗺️ Roadmap
 
 ### Current Features ?
 - Complete Explorer HAT driver
@@ -413,7 +413,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Comprehensive documentation
 - Package-based architecture
 
-### Planned Features ??
+### Planned Features 🔮
 - [ ] PWM motor speed control
 - [ ] Advanced pattern library
 - [ ] Robot behavior framework
@@ -425,7 +425,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## ?? Why .NET for Robotics?
+## 💻 Why .NET for Robotics?
 
 ### Modern Language Features
 - **Pattern Matching** - Clean state machine logic
@@ -446,7 +446,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## ?? Showcase
+## 🌟 Showcase
 
 ### Built with Tobot
 
@@ -460,7 +460,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## ?? Acknowledgments
+## 🙏 Acknowledgments
 
 - **Pimoroni** - For creating the amazing Explorer HAT hardware
 - **.NET Team** - For bringing .NET to ARM/IoT devices
@@ -468,13 +468,13 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## ?? License
+## 📄 License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## ?? Links
+## 🔗 Links
 
 - **Hardware**: [Pimoroni Explorer HAT](https://shop.pimoroni.com/products/explorer-hat)
 - **Documentation**: [.NET IoT Libraries](https://github.com/dotnet/iot)
@@ -483,7 +483,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ---
 
-## ?? Get Started Now!
+## 🚀 Get Started Now!
 
 ```bash
 git clone https://github.com/yourusername/tobot.git
@@ -497,8 +497,8 @@ dotnet run --project Tobot
 
 <div align="center">
 
-**Made with ?? for makers, educators, and robotics enthusiasts**
+**Made with ❤️ for makers, educators, and robotics enthusiasts**
 
-[? Star this repo](https://github.com/yourusername/tobot) | [?? Read the docs](Tobot/README.md) | [?? Quick start](Tobot/QUICKSTART.md)
+[⭐ Star this repo](https://github.com/yourusername/tobot) | [📚 Read the docs](Tobot/README.md) | [🚀 Quick start](Tobot/QUICKSTART.md)
 
 </div>
