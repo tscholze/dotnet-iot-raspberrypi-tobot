@@ -10,6 +10,8 @@ builder.Services.AddSingleton<ExplorerHat>();
 
 var app = builder.Build();
 
+app.UseAntiforgery();
+
 app.MapRazorComponents<App>();
 app.MapHub<TobotHub>("/tobothub");
 
