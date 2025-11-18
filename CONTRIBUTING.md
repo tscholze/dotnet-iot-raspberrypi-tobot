@@ -2,18 +2,49 @@
 
 Thank you for your interest in contributing to Tobot! This document provides guidelines and instructions for contributing.
 
-## ?? Ways to Contribute
+## 🎯 Project Scope & Intent
+
+**Important Notice:** This project is a personal learning and experimentation platform. It is **not intended as a production-ready product or a general-purpose solution** for others.
+
+### What This Means
+
+- **Personal Project** - Built primarily for my own robotics experiments and learning
+- **No Custom Features** - I have no intention to implement custom features on request
+- **No Support Obligations** - I don't provide technical support or troubleshooting assistance
+- **No Guarantees** - Code may change dramatically, break, or be abandoned at any time
+
+### Collaboration Is Still Welcome!
+
+Despite the personal nature of this project:
+
+- ✅ **Feel free to fork** - Take the code and make it your own
+- ✅ **Contributions accepted** - If you fix bugs or add features you need, PRs are welcome
+- ✅ **Learn from it** - Use it as a reference for your own projects
+- ✅ **Share your work** - Show off what you've built with it
+
+### If You Know What You're Doing
+
+If you're experienced with .NET IoT development and want to contribute:
+
+- Fork the repo and experiment freely
+- Submit PRs for bug fixes or enhancements
+- Don't expect detailed code reviews or merge guarantees
+- Understand that your contribution might not align with my personal goals
+
+**Bottom line:** This is a playground, not a product. Use it, learn from it, contribute to it—but don't expect it to serve your specific needs out of the box.
+
+## 🤝 Ways to Contribute
 
 We welcome contributions in many forms:
 
-- ?? **Bug Reports** - Found an issue? Let us know!
-- ?? **Feature Requests** - Have an idea? We'd love to hear it!
-- ?? **Documentation** - Improve guides, fix typos, add examples
-- ?? **Code Examples** - Share your robot projects
-- ?? **Code Contributions** - Fix bugs, add features, improve performance
-- ?? **Testing** - Help verify the library on different Pi models
+- 🐛 **Bug Reports** - Found an issue? Let us know!
+- 💡 **Feature Requests** - Have an idea? We'd love to hear it!
+- 📝 **Documentation** - Improve guides, fix typos, add examples
+- 🎨 **Code Examples** - Share your robot projects
+- 💻 **Code Contributions** - Fix bugs, add features, improve performance
+- 🧪 **Testing** - Help verify the library on different Pi models
 
-## ?? Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -44,7 +75,7 @@ We welcome contributions in many forms:
    dotnet run --project Tobot check
    ```
 
-## ?? Contribution Guidelines
+## 📋 Contribution Guidelines
 
 ### Code Style
 
@@ -117,7 +148,7 @@ public class Motor : IDisposable
 }
 ```
 
-## ?? Reporting Bugs
+## 🐛 Reporting Bugs
 
 ### Before Submitting
 
@@ -161,7 +192,7 @@ Full error message and stack trace
 ```
 ```
 
-## ?? Feature Requests
+## 💡 Feature Requests
 
 We love new ideas! When proposing features:
 
@@ -192,7 +223,7 @@ Other ways to achieve this
 Any other information
 ```
 
-## ?? Code Contributions
+## 💻 Code Contributions
 
 ### Pull Request Process
 
@@ -246,7 +277,7 @@ and better motor control.
 Closes #42
 ```
 
-## ?? Package Structure
+## 📦 Package Structure
 
 When adding new functionality:
 
@@ -289,7 +320,7 @@ public class ExplorerHat
 }
 ```
 
-## ?? Testing
+## 🧪 Testing
 
 We're building a comprehensive test suite. When it's ready:
 
@@ -298,7 +329,7 @@ We're building a comprehensive test suite. When it's ready:
 - Add integration tests for hardware interaction
 - Document test setup requirements
 
-## ?? Documentation
+## 📚 Documentation
 
 ### Code Documentation
 
@@ -321,7 +352,7 @@ Add examples to:
 - `Tobot.Device/ExplorerHat/ExplorerHatExample.cs` - Code samples
 - Documentation files - Usage scenarios
 
-## ??? Architecture Decisions
+## 🏗️ Architecture Decisions
 
 ### Design Principles
 
@@ -339,13 +370,13 @@ Add examples to:
 - Support both sync and async patterns
 - Make common tasks easy, complex tasks possible
 
-## ? Questions?
+## 💬 Questions?
 
 - Open a [Discussion](https://github.com/yourusername/tobot/discussions) for general questions
 - Join our community chat (link when available)
 - Check existing [Issues](https://github.com/yourusername/tobot/issues) and [PRs](https://github.com/yourusername/tobot/pulls)
 
-## ??? Recognition
+## 🏆 Recognition
 
 Contributors will be:
 - Listed in the project's contributor list
@@ -355,9 +386,9 @@ Contributors will be:
 Significant contributions may earn you:
 - Commit access to the repository
 - Mention on the project homepage
-- Our eternal gratitude! ??
+- Our eternal gratitude! 🙏
 
-## ?? Code of Conduct
+## 📜 Code of Conduct
 
 ### Our Pledge
 
@@ -382,13 +413,13 @@ We are committed to providing a welcoming and inclusive environment for everyone
 
 Violations may result in temporary or permanent ban from the project.
 
-## ?? Thank You!
+## 🙏 Thank You!
 
 Every contribution, no matter how small, makes Tobot better!
 
 Your time and effort are appreciated by the entire community.
 
-**Happy coding, and welcome to the Tobot family!** ???
+**Happy coding, and welcome to the Tobot family!** 🤖
 
 ---
 

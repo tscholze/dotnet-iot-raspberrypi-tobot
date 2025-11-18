@@ -393,7 +393,7 @@ public async Task MonitorSensorsAsync(CancellationToken ct)
 
 ## 🤝 Contributing
 
-We welcome contributions! Whether it's:
+This project welcome contributions! Whether it's:
 
 - 🐛 Bug reports
 - 💡 Feature requests  
@@ -401,27 +401,27 @@ We welcome contributions! Whether it's:
 - 💻 Code examples
 - 🔧 Driver enhancements
 
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Please note, that I am developing this project for my self and there is no intend to make it a "market product" in sense of warranty, liability, etc.
+
+For more, please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## 🗺️ Roadmap
 
-### Current Features ?
+### Current Features
 - Complete Explorer HAT driver
 - Interactive demo application
 - Comprehensive documentation
 - Package-based architecture
 
-### Planned Features 🔮
-- [ ] PWM motor speed control
+### 🔮 Planned Features 
+- [X] PWM motor speed control
 - [ ] Advanced pattern library
-- [ ] Robot behavior framework
 - [ ] Configuration system
 - [ ] Logging framework
 - [ ] Unit test coverage
 - [ ] CI/CD pipeline
-- [ ] NuGet packages
 
 ---
 
@@ -443,20 +443,6 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - **Native ARM** - Optimized for Raspberry Pi
 - **Efficient Memory** - Garbage collection tuned for IoT
 - **Low Latency** - Real-time control capable
-
----
-
-## 🌟 Showcase
-
-### Built with Tobot
-
-> "Using Tobot, we built a line-following robot in under an hour!" - *Robotics Workshop Participant*
-
-> "The package organization makes it so easy to find what you need." - *C# Developer*
-
-> "Finally, a professional robotics library for .NET!" - *Maker Community*
-
-**Share your project!** Open an issue with your creation and we'll feature it here.
 
 ---
 
