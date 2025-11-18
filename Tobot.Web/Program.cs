@@ -10,6 +10,7 @@ builder.Services.AddSingleton<ExplorerHat>();
 
 var app = builder.Build();
 
+app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>();
