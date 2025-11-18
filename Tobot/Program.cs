@@ -46,9 +46,10 @@ class Program
             Console.WriteLine("│  6. Touch Sensor Demo       - Capacitive touch         │");
             Console.WriteLine("│  7. Robot Control System    - Complete robot control   │");
             Console.WriteLine("│  8. System Status Check     - Test all components      │");
+            Console.WriteLine("│  9. Pan-Tilt HAT Demo       - Move pan & tilt servos   │");
             Console.WriteLine("│  0. Exit                                                │");
             Console.WriteLine("└─────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-8): ");
+            Console.Write("\nEnter your choice (0-9): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -79,11 +80,14 @@ class Program
                 case "8":
                     RunSystemCheck();
                     break;
+                case "9":
+                    RunPanTiltDemo();
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-8.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-9.");
                     break;
             }
 
@@ -126,7 +130,7 @@ class Program
                 break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt");
                 break;
         }
     }
@@ -560,6 +564,69 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"\n❌ Error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Demonstrates the Pan-Tilt HAT by sweeping pan and tilt angles.
+    /// Requires a Pimoroni Pan-Tilt HAT connected via I2C (default address 0x40).
+    /// </summary>
+    static void RunPanTiltDemo()
+    {
+        Console.WriteLine("🎯 Pan-Tilt HAT Demo");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Centering, then sweeping pan and tilt...\n");
+
+        try
+        {
+            // PanTiltHat lives in Tobot.Device.PanTiltHat
+            using var panTilt = new Tobot.Device.PanTiltHat.PanTiltHat();
+
+            // Center
+            panTilt.Center();
+            Thread.Sleep(1000);
+
+            // Sweep pan: -60 -> 60
+            for (int a = -60; a <= 60; a += 15)
+            {
+                panTilt.SetPanAngle(a);
+                Console.WriteLine($"Pan: {a}°");
+                Thread.Sleep(250);
+            }
+            for (int a = 60; a >= -60; a -= 15)
+            {
+                panTilt.SetPanAngle(a);
+                Console.WriteLine($"Pan: {a}°");
+                Thread.Sleep(250);
+            }
+
+            // Sweep tilt: -30 -> 30
+            for (int a = -30; a <= 30; a += 10)
+            {
+                panTilt.SetTiltAngle(a);
+                Console.WriteLine($"Tilt: {a}°");
+                Thread.Sleep(300);
+            }
+            for (int a = 30; a >= -30; a -= 10)
+            {
+                panTilt.SetTiltAngle(a);
+                Console.WriteLine($"Tilt: {a}°");
+                Thread.Sleep(300);
+            }
+
+            // Combined movement
+            Console.WriteLine("\n▶ Combined movement");
+            panTilt.SetAngles(-30, 20);
+            Thread.Sleep(600);
+            panTilt.SetAngles(30, -10);
+            Thread.Sleep(600);
+            panTilt.Center();
+
+            Console.WriteLine("\n✅ Pan-Tilt demo complete!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error: {ex.Message}");
         }
     }
 

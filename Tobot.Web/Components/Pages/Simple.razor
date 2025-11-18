@@ -374,11 +374,10 @@
     /// <param name="motorNumber">Motor number (1 or 2).</param>
     private async Task MoveMotorForward(int motorNumber)
     {
-        if (_hubConnection is not null)
-        {
-            var speed = motorNumber == 1 ? _motor1Speed : _motor2Speed;
-            await _hubConnection.InvokeAsync("MoveMotorForward", motorNumber, speed);
-        }
+        if (_hubConnection is null) return;
+        
+        var speed = motorNumber == 1 ? _motor1Speed : _motor2Speed;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorForward), motorNumber, speed);
     }
 
     /// <summary>
@@ -387,11 +386,10 @@
     /// <param name="motorNumber">Motor number (1 or 2).</param>
     private async Task MoveMotorBackward(int motorNumber)
     {
-        if (_hubConnection is not null)
-        {
-            var speed = motorNumber == 1 ? _motor1Speed : _motor2Speed;
-            await _hubConnection.InvokeAsync("MoveMotorBackward", motorNumber, speed);
-        }
+        if (_hubConnection is null) return;
+        
+        var speed = motorNumber == 1 ? _motor1Speed : _motor2Speed;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorBackward), motorNumber, speed);
     }
 
     /// <summary>
@@ -400,10 +398,9 @@
     /// <param name="motorNumber">Motor number (1 or 2).</param>
     private async Task StopMotor(int motorNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("StopMotor", motorNumber);
-        }
+        if (_hubConnection is null) return;
+        
+        await _hubConnection.InvokeAsync(nameof(TobotHub.StopMotor), motorNumber);
     }
 
     /// <summary>
@@ -411,10 +408,8 @@
     /// </summary>
     private async Task StopAllMotors()
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("StopAllMotors");
-        }
+        if (_hubConnection is null) return;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.StopAllMotors));
     }
 
     /// <summary>
@@ -423,10 +418,8 @@
     /// <param name="ledNumber">LED number (1-4).</param>
     private async Task TurnLedOn(int ledNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("TurnLedOn", ledNumber);
-        }
+        if (_hubConnection is null) return;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.TurnLedOn), ledNumber);
     }
 
     /// <summary>
@@ -435,10 +428,8 @@
     /// <param name="ledNumber">LED number (1-4).</param>
     private async Task TurnLedOff(int ledNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("TurnLedOff", ledNumber);
-        }
+        if (_hubConnection is null) return;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.TurnLedOff), ledNumber);
     }
 
     /// <summary>
@@ -447,10 +438,9 @@
     /// <param name="ledNumber">LED number (1-4).</param>
     private async Task ToggleLed(int ledNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("ToggleLed", ledNumber);
-        }
+        if (_hubConnection is null) return;
+        
+        await _hubConnection.InvokeAsync(nameof(TobotHub.ToggleLed), ledNumber);
     }
 
     /// <summary>
@@ -459,10 +449,8 @@
     /// <param name="outputNumber">Output number (1-4).</param>
     private async Task TurnOutputOn(int outputNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("TurnOutputOn", outputNumber);
-        }
+        if (_hubConnection is null) return;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.TurnOutputOn), outputNumber);
     }
 
     /// <summary>
@@ -471,10 +459,8 @@
     /// <param name="outputNumber">Output number (1-4).</param>
     private async Task TurnOutputOff(int outputNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("TurnOutputOff", outputNumber);
-        }
+        if (_hubConnection is null) return;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.TurnOutputOff), outputNumber);
     }
 
     /// <summary>
@@ -483,20 +469,16 @@
     /// <param name="outputNumber">Output number (1-4).</param>
     private async Task ToggleOutput(int outputNumber)
     {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.InvokeAsync("ToggleOutput", outputNumber);
-        }
+        if (_hubConnection is null) return;
+        await _hubConnection.InvokeAsync(nameof(TobotHub.ToggleOutput), outputNumber);
     }
 
     /// <summary>
     /// Disposes the SignalR hub connection.
     /// </summary>
     public async ValueTask DisposeAsync()
-    {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.DisposeAsync();
-        }
+    {  
+        if (_hubConnection is null) return;
+        await _hubConnection.DisposeAsync();
     }
 }

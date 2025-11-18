@@ -73,6 +73,25 @@ A professional-grade driver library for the Explorer HAT with:
 | **🔌 Digital** | `DigitalInput/Output`, Collections | Digital I/O with event support |
 | **👆 Touch** | `TouchSensor`, `TouchCollection` | Capacitive touch via CAP1208 |
 
+#### 🧭 Pan-Tilt HAT (Experimental)
+
+Support for the Pimoroni Pan-Tilt HAT using the PCA9685 PWM controller (I2C).
+
+- Namespace: `Tobot.Device.PanTiltHat`
+- Types: `PanTiltHat`, `PanTiltConfig`
+- Features: set pan/tilt angles, center, configurable pulse ranges
+
+Example:
+
+```csharp
+using Tobot.Device.PanTiltHat;
+
+using var panTilt = new PanTiltHat();
+panTilt.Center();
+panTilt.SetPanAngle(30);
+panTilt.SetTiltAngle(-10);
+```
+
 ### 🎮 Tobot Console Application
 
 An interactive showcase featuring:
@@ -179,6 +198,9 @@ Tobot/
         ??? Analog/                    Analog input package
         ??? Digital/                   Digital I/O package
         ??? Touch/                     Touch sensor package
+    ??? PanTiltHat/                    Pan-Tilt HAT (PCA9685)
+        ??? PanTiltHat.cs              High-level pan/tilt API
+        ??? Pca9685.cs                 Minimal PWM controller driver
 │
 └── 🌐 Tobot.Web/                      Web control interface
     ├── Program.cs                     ASP.NET Core application
@@ -431,6 +453,7 @@ For more, please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Current Features
 - Complete Explorer HAT driver
+- Pan-Tilt HAT (experimental)
 - Interactive demo application
 - Comprehensive documentation
 - Package-based architecture
