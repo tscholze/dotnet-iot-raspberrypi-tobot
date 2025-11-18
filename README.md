@@ -140,6 +140,26 @@ dotnet run --project Tobot robot
 
 ---
 
+## 🧰 Scripts
+
+All helper scripts live in `scripts/` at the project root.
+
+- `scripts/run-tobot-web-kiosk.sh`: Starts the `Tobot.Web` Blazor app and opens it in Firefox kiosk mode on the Raspberry Pi at `http://localhost:5247/simple`.
+
+Usage:
+
+```bash
+chmod +x scripts/run-tobot-web-kiosk.sh
+./scripts/run-tobot-web-kiosk.sh
+```
+
+Notes:
+- Requires `firefox` (or `firefox-esr`) installed on the Raspberry Pi.
+- Binds the web app to `0.0.0.0:5247` so it’s reachable on your LAN.
+- Adjust the script if you prefer Chromium (`chromium-browser --kiosk`).
+
+---
+
 ## 🏛️ Architecture
 
 Tobot follows a clean, modular architecture:
