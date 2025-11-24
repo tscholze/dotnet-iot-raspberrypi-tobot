@@ -4,11 +4,11 @@ set -euo pipefail
 # Run Tobot.Web and open it in Firefox kiosk mode on Raspberry Pi
 # - Binds ASP.NET Core to 0.0.0.0:5247
 # - Waits until the site is reachable
-# - Launches Firefox in fullscreen kiosk mode to /simple
+# - Launches Firefox in fullscreen kiosk mode to /bot
 
 # Config
 PORT="5247"
-RELATIVE_PAGE="/simple"
+RELATIVE_PAGE="/bot"
 ASPNETCORE_URLS_DEFAULT="http://0.0.0.0:${PORT}"
 URL_PATH="http://127.0.0.1:${PORT}${RELATIVE_PAGE}"
 
