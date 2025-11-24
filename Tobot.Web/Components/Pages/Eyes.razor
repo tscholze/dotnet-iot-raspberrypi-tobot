@@ -1,0 +1,252 @@
+@page "/eyes"
+@rendermode InteractiveServer
+
+<PageTitle>Tobot Eyes</PageTitle>
+
+<div class="eyes-container">
+    <div class="eye-wrapper left-eye">
+        <div class="eye">
+            <div class="eyeball">
+                <div class="pupil"></div>
+                <div class="shine"></div>
+            </div>
+            <div class="eyelid"></div>
+        </div>
+    </div>
+    
+    <div class="eye-wrapper right-eye">
+        <div class="eye">
+            <div class="eyeball">
+                <div class="pupil"></div>
+                <div class="shine"></div>
+            </div>
+            <div class="eyelid"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .eyes-container {
+        width: 1280px;
+        height: 720px;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 120px;
+        overflow: hidden;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+
+    .eye-wrapper {
+        position: relative;
+        animation: float 4s ease-in-out infinite;
+    }
+
+    .left-eye {
+        animation-delay: 0s;
+    }
+
+    .right-eye {
+        animation-delay: 0.2s;
+    }
+
+    .eye {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        background: #fff;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 
+            0 0 40px rgba(255, 255, 255, 0.3),
+            inset 0 -20px 40px rgba(0, 0, 0, 0.1);
+        animation: blink 5s ease-in-out infinite;
+    }
+
+    .eyeball {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        animation: look 6s ease-in-out infinite;
+    }
+
+    .pupil {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80px;
+        height: 80px;
+        background: radial-gradient(circle at 35% 35%, #2c3e50 0%, #000 100%);
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .pupil::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        background: #000;
+        border-radius: 50%;
+    }
+
+    .shine {
+        position: absolute;
+        top: 30%;
+        left: 40%;
+        width: 35px;
+        height: 35px;
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .shine::after {
+        content: '';
+        position: absolute;
+        top: 50px;
+        left: -10px;
+        width: 15px;
+        height: 15px;
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, transparent 60%);
+        border-radius: 50%;
+    }
+
+    .eyelid {
+        position: absolute;
+        top: -200px;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        border-radius: 50%;
+        z-index: 10;
+        transition: top 0.15s ease-out;
+    }
+
+    /* Animations */
+    @@keyframes float {
+        0%, 100% {
+            transform: translateY(0px) scale(1);
+        }
+        50% {
+            transform: translateY(-8px) scale(1.02);
+        }
+    }
+
+    @@keyframes blink {
+        0%, 10%, 20%, 100% {
+            /* Eyes open - eyelid stays up */
+        }
+        12%, 18% {
+            /* Quick blink */
+        }
+        12% .eyelid {
+            top: 0;
+        }
+        18% .eyelid {
+            top: -200px;
+        }
+    }
+
+    .eye-wrapper:nth-child(1) .eye {
+        animation: blink 4.5s ease-in-out infinite;
+    }
+
+    .eye-wrapper:nth-child(2) .eye {
+        animation: blink 4.5s ease-in-out infinite 0.1s;
+    }
+
+    /* Blink effect using steps */
+    @@keyframes blink {
+        0%, 88%, 92%, 100% {
+            /* Do nothing, eyes open */
+        }
+        90% {
+            /* Close eyes briefly */
+        }
+    }
+
+    @@keyframes look {
+        0%, 100% {
+            transform: translate(-50%, -50%);
+        }
+        20% {
+            transform: translate(-48%, -52%);
+        }
+        40% {
+            transform: translate(-52%, -50%);
+        }
+        60% {
+            transform: translate(-50%, -48%);
+        }
+        80% {
+            transform: translate(-51%, -51%);
+        }
+    }
+
+    /* Manual blink trigger via CSS animation */
+    @@keyframes blink-eyelid {
+        0%, 45%, 55%, 100% {
+            top: -200px;
+        }
+        48%, 52% {
+            top: 0;
+        }
+    }
+
+    .eye {
+        position: relative;
+    }
+
+    .eyelid {
+        animation: blink-eyelid 4s ease-in-out infinite;
+    }
+
+    .left-eye .eyelid {
+        animation-delay: 0s;
+    }
+
+    .right-eye .eyelid {
+        animation-delay: 0.08s;
+    }
+
+    /* Friendly hover interaction */
+    .eye-wrapper:hover .eye {
+        transform: scale(1.08);
+        transition: transform 0.3s ease;
+    }
+
+    .eye-wrapper:hover .pupil {
+        width: 90px;
+        height: 90px;
+        transition: all 0.3s ease;
+    }
+
+    /* Add a subtle glow on hover */
+    .eye-wrapper:hover .eye {
+        box-shadow: 
+            0 0 60px rgba(100, 200, 255, 0.6),
+            inset 0 -20px 40px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+@code {
+    // No code-behind needed for pure CSS animation
+}
