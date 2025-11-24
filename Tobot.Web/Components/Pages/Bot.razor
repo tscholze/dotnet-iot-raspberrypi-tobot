@@ -1,9 +1,10 @@
 @page "/bot"
+@implements IDisposable
 @rendermode InteractiveServer
 
 <PageTitle>Tobot Bot</PageTitle>
 
-<div class="eyes-container">
+<div class="eyes-container @GetMoodClass()">
     <div class="eye-wrapper left-eye">
         <div class="eye">
             <div class="eyeball">
@@ -227,6 +228,98 @@
         animation-delay: 0.08s;
     }
 
+    /* Mood-specific styles */
+    .eyes-container.mood-happy .eye {
+        border-radius: 50% 50% 45% 45%;
+        transform: scaleY(0.85);
+    }
+
+    .eyes-container.mood-happy .pupil {
+        width: 60px;
+        height: 60px;
+    }
+
+    .eyes-container.mood-happy .eyeball {
+        animation: look-happy 3s ease-in-out infinite;
+    }
+
+    .eyes-container.mood-terrified .eye {
+        width: 450px;
+        height: 450px;
+        border-radius: 50%;
+    }
+
+    .eyes-container.mood-terrified .pupil {
+        width: 120px;
+        height: 120px;
+    }
+
+    .eyes-container.mood-terrified .eyeball {
+        animation: shake 0.3s ease-in-out infinite;
+    }
+
+    .eyes-container.mood-terrified .eyelid {
+        animation: none !important;
+    }
+
+    .eyes-container.mood-angry .eye {
+        border-radius: 50%;
+        background: linear-gradient(180deg, #fff 0%, #ffe0e0 100%);
+    }
+
+    .eyes-container.mood-angry .pupil {
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle at 35% 35%, #8b0000 0%, #000 100%);
+    }
+
+    .eyes-container.mood-angry .eyeball {
+        animation: look-angry 2s ease-in-out infinite;
+    }
+
+    .eyes-container.mood-angry .eyelid {
+        animation: angry-squint 3s ease-in-out infinite;
+    }
+
+    @@keyframes look-happy {
+        0%, 100% {
+            transform: translate(-50%, -50%) rotate(-5deg);
+        }
+        50% {
+            transform: translate(-50%, -50%) rotate(5deg);
+        }
+    }
+
+    @@keyframes shake {
+        0%, 100% {
+            transform: translate(-50%, -50%) translateX(0);
+        }
+        25% {
+            transform: translate(-50%, -50%) translateX(-3px);
+        }
+        75% {
+            transform: translate(-50%, -50%) translateX(3px);
+        }
+    }
+
+    @@keyframes look-angry {
+        0%, 100% {
+            transform: translate(-50%, -45%);
+        }
+        50% {
+            transform: translate(-50%, -48%);
+        }
+    }
+
+    @@keyframes angry-squint {
+        0%, 100% {
+            top: -300px;
+        }
+        50% {
+            top: -350px;
+        }
+    }
+
     /* Friendly hover interaction */
     .eye-wrapper:hover .eye {
         transform: scale(1.08);
@@ -248,5 +341,49 @@
 </style>
 
 @code {
-    // No code-behind needed for pure CSS animation
+    /// <summary>
+    /// Represents different emotional states of the robot eyes.
+    /// </summary>
+    private enum Mood
+    {
+        Neutral,
+        Happy,
+        Terrified,
+        Angry
+    }
+
+    private Mood _currentMood = Mood.Neutral;
+    private Timer? _moodTimer;
+    private int _moodIndex = 0;
+
+    /// <summary>
+    /// Returns the CSS class corresponding to the current mood.
+    /// </summary>
+    private string GetMoodClass()
+    {
+        return _currentMood switch
+        {
+            Mood.Happy => "mood-happy",
+            Mood.Terrified => "mood-terrified",
+            Mood.Angry => "mood-angry",
+            _ => "mood-neutral"
+        };
+    }
+
+    protected override void OnInitialized()
+    {
+        // Cycle through moods every 4 seconds for testing
+        _moodTimer = new Timer(_ =>
+        {
+            var moods = Enum.GetValues<Mood>();
+            _moodIndex = (_moodIndex + 1) % moods.Length;
+            _currentMood = moods[_moodIndex];
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4));
+    }
+
+    public void Dispose()
+    {
+        _moodTimer?.Dispose();
+    }
 }
