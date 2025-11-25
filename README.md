@@ -75,11 +75,11 @@ A professional-grade driver library for the Explorer HAT with:
 
 #### 🧭 Pan-Tilt HAT (Experimental)
 
-Support for the Pimoroni Pan-Tilt HAT using the PCA9685 PWM controller (I2C).
+Support for the Pimoroni Pan-Tilt HAT via its onboard microcontroller at I2C address `0x15` (same protocol as the official Python library).
 
 - Namespace: `Tobot.Device.PanTiltHat`
-- Types: `PanTiltHat`, `PanTiltConfig`
-- Features: set pan/tilt angles, center, configurable pulse ranges
+- Type: `PanTiltHat`
+- Features: set pan/tilt angles, idle timeout auto-disable, read-back positions
 
 Example:
 
@@ -87,10 +87,23 @@ Example:
 using Tobot.Device.PanTiltHat;
 
 using var panTilt = new PanTiltHat();
-panTilt.Center();
-panTilt.SetPanAngle(30);
-panTilt.SetTiltAngle(-10);
+
+// Center
+panTilt.Pan(0);
+panTilt.Tilt(0);
+
+// Move
+panTilt.Pan(30);
+panTilt.Tilt(-10);
+
+// Read back (optional)
+Console.WriteLine($"Pan: {panTilt.GetPan()}°, Tilt: {panTilt.GetTilt()}°");
 ```
+
+Notes:
+- Requires I2C enabled on the Pi (`raspi-config`) and device visible at `0x15` (`i2cdetect -y 1`).
+- Servos need an adequate 5V supply connected to the HAT; the Pi’s USB power is not sufficient to drive servos.
+- Default servo pulse range is 575–2325 µs (≈ -90°…+90°). Idle timeout defaults to 2s.
 
 ### 🎮 Tobot Console Application
 
@@ -198,9 +211,9 @@ Tobot/
         ??? Analog/                    Analog input package
         ??? Digital/                   Digital I/O package
         ??? Touch/                     Touch sensor package
-    ??? PanTiltHat/                    Pan-Tilt HAT (PCA9685)
-        ??? PanTiltHat.cs              High-level pan/tilt API
-        ??? Pca9685.cs                 Minimal PWM controller driver
+    ??? PanTiltHat/                    Pan-Tilt HAT (MCU @ 0x15)
+        ??? PanTiltHat.cs              High-level pan/tilt API (MCU protocol)
+        ??? Pca9685.cs                 (Optional) PCA9685 helper (not required for MCU mode)
 │
 └── 🌐 Tobot.Web/                      Web control interface
     ├── Program.cs                     ASP.NET Core application
