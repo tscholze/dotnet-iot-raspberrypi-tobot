@@ -13,6 +13,21 @@ namespace Tobot.Device.HcSr04;
 public sealed class HcSr04Sensor : IDisposable
 {
 	/// <summary>
+	/// Default BCM pin driving the sensor's trigger input.
+	/// </summary>
+	public const int DefaultTriggerPin = 12;
+
+	/// <summary>
+	/// Default BCM pin connected to the sensor's echo output.
+	/// </summary>
+	public const int DefaultEchoPin = 22;
+
+	/// <summary>
+	/// Default number of samples to average per reading.
+	/// </summary>
+	public const int DefaultSamplesPerReading = 5;
+
+	/// <summary>
 	/// Underlying HC-SR04 driver from <c>Iot.Device.Bindings</c>.
 	/// </summary>
 	private readonly Hcsr04 _sensor;
@@ -43,7 +58,7 @@ public sealed class HcSr04Sensor : IDisposable
 	/// <param name="distanceCm">Measured distance in centimeters when the method succeeds.</param>
 	/// <param name="samples">Number of consecutive measurements to average. Must be greater than zero.</param>
 	/// <returns><c>true</c> when at least one measurement succeeded; otherwise <c>false</c>.</returns>
-	public bool TryReadDistance(out double distanceCm, int samples = 3)
+	public bool TryReadDistance(out double distanceCm, int samples = DefaultSamplesPerReading)
 	{
 		EnsureNotDisposed();
 
@@ -80,7 +95,7 @@ public sealed class HcSr04Sensor : IDisposable
 	/// <param name="samples">Number of consecutive measurements to average. Must be greater than zero.</param>
 	/// <returns>Average distance in centimeters.</returns>
 	/// <exception cref="InvalidOperationException">Thrown when the sensor fails to provide any measurement.</exception>
-	public double ReadDistance(int samples = 3)
+	public double ReadDistance(int samples = DefaultSamplesPerReading)
 	{
 		if (!TryReadDistance(out double distance, samples))
 		{
