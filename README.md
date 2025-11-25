@@ -1,8 +1,8 @@
-# 🤖 Tobot - Explorer HAT for .NET
+# 🤖 Tobot - .NET Robotics Platform for Raspberry Pi
 
-> **Modern robotics meets modern .NET** - A comprehensive C# driver and demo platform for the Pimoroni Explorer HAT on Raspberry Pi
+> **Modern robotics meets modern .NET** - A unified C# driver and demo platform for Pimoroni Explorer HAT, Pan-Tilt HAT, and ultrasonic sensors on Raspberry Pi
 
-[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 13](https://img.shields.io/badge/C%23-13.0-239120?logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Compatible-C51A4A?logo=raspberry-pi)](https://www.raspberrypi.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
