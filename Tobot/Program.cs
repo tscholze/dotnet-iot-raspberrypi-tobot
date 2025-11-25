@@ -649,18 +649,14 @@ class Program
         Console.WriteLine("═══════════════════════════════════════");
         Console.WriteLine("Polling the ultrasonic range finder...\n");
 
-        const int triggerPin = 12; // BCM pin driving the sensor's trigger input
-        const int echoPin = 22;    // BCM pin connected to the sensor's echo output
-        const int iterations = 20;
         const int delayMs = 500;
         const int samplesPerReading = 5;
 
-        Console.WriteLine($"Trigger Pin (BCM): {triggerPin}, Echo Pin (BCM): {echoPin}");
         Console.WriteLine("Update the pin numbers above to match your wiring.\n");
 
         try
         {
-            using var sensor = new HcSr04Sensor(triggerPin, echoPin);
+            using var sensor = new HcSr04Sensor();
 
             for (int i = 0; i < iterations; i++)
             {

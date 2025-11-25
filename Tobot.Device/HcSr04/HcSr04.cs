@@ -40,16 +40,14 @@ public sealed class HcSr04Sensor : IDisposable
 	/// <summary>
 	/// Initializes a new instance of the <see cref="HcSr04Sensor"/> class using the logical pin numbering scheme.
 	/// </summary>
-	/// <param name="triggerPin">BCM pin number connected to the sensor's trigger input.</param>
-	/// <param name="echoPin">BCM pin number connected to the sensor's echo output.</param>
 	/// <param name="controller">
 	/// Optional <see cref="GpioController"/> to use for pin access. When omitted, a controller is created and disposed with the sensor.
 	/// </param>
-	public HcSr04Sensor(int triggerPin, int echoPin, GpioController? controller = null)
+	public HcSr04Sensor(GpioController? controller = null)
 	{
 		_sensor = controller is null
-			? new Hcsr04(triggerPin, echoPin)
-			: new Hcsr04(controller, triggerPin, echoPin, shouldDispose: false);
+			? new Hcsr04(DefaultTriggerPin, DefaultEchoPin)
+			: new Hcsr04(controller, DefaultTriggerPin, DefaultEchoPin, shouldDispose: false);
 	}
 
 	/// <summary>
