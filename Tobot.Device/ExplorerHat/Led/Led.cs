@@ -1,4 +1,3 @@
-using System;
 using System.Device.Gpio;
 
 namespace Tobot.Device.ExplorerHat.Led

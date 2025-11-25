@@ -1,5 +1,4 @@
-﻿using System;
-using System.Device.Gpio;
+﻿using System.Device.Gpio;
 using System.Device.I2c;
 using Tobot.Device.ExplorerHat.Analog;
 using Tobot.Device.ExplorerHat.Digital;

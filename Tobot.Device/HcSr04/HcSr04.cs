@@ -1,4 +1,3 @@
-using System;
 using System.Device.Gpio;
 using Iot.Device.Hcsr04;
 using UnitsNet;

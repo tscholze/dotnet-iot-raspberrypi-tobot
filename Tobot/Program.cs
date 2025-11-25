@@ -1,9 +1,5 @@
-﻿using System;
-using System.Device.Gpio;
-using System.Threading;
+﻿using System.Device.Gpio;
 using Tobot.Device;
-using Tobot.Device.ExplorerHat;
-using Tobot.Device.ExplorerHat.Digital;
 
 namespace Tobot;
 

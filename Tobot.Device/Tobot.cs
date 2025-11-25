@@ -1,8 +1,6 @@
-using System;
 using System.Device.Gpio;
 using Tobot.Device.ExplorerHat.Motor;
 using Tobot.Device.HcSr04;
-using Tobot.Device.PanTiltHat;
 using ExplorerHatDevice = Tobot.Device.ExplorerHat.ExplorerHat;
 using PanTiltHatDevice = Tobot.Device.PanTiltHat.PanTiltHat;
 

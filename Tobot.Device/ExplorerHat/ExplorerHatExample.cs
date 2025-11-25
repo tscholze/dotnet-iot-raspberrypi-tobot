@@ -1,7 +1,3 @@
-using System;
-using System.Threading;
-using Tobot.Device.ExplorerHat;
-
 namespace Tobot.Device.ExplorerHat.Examples
 {
     /// <summary>

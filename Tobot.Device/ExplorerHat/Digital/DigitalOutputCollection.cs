@@ -1,6 +1,4 @@
-using System;
 using System.Device.Gpio;
-using System.Linq;
 
 namespace Tobot.Device.ExplorerHat.Digital
 {

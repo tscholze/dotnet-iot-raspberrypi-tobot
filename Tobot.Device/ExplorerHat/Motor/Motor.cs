@@ -1,7 +1,4 @@
-using System;
 using System.Device.Gpio;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Tobot.Device.ExplorerHat.Motor
 {
