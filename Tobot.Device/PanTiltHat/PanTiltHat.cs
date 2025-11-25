@@ -16,7 +16,7 @@ public sealed class PanTiltConfig
     /// <summary>
     /// I2C address of the PCA9685 controller. Default is 0x40.
     /// </summary>
-    public int I2cAddress { get; init; } = 0x0F;
+    public int I2cAddress { get; init; } = 0x15;
 
     /// <summary>
     /// PWM frequency in Hz for servo control. Default is 50 Hz.
