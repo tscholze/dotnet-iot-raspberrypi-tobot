@@ -649,10 +649,9 @@ class Program
         Console.WriteLine("═══════════════════════════════════════");
         Console.WriteLine("Polling the ultrasonic range finder...\n");
 
+        const int iterations = 20;
         const int delayMs = 500;
         const int samplesPerReading = 5;
-
-        Console.WriteLine("Update the pin numbers above to match your wiring.\n");
 
         try
         {
