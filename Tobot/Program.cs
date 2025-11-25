@@ -569,60 +569,87 @@ class Program
 
     /// <summary>
     /// Demonstrates the Pan-Tilt HAT by sweeping pan and tilt angles.
-    /// Requires a Pimoroni Pan-Tilt HAT connected via I2C (default address 0x40).
+    /// Requires a Pimoroni Pan-Tilt HAT connected via I2C (default address 0x15).
     /// </summary>
     static void RunPanTiltDemo()
     {
         Console.WriteLine("🎯 Pan-Tilt HAT Demo");
         Console.WriteLine("═══════════════════════════════════════");
-        Console.WriteLine("Centering, then sweeping pan and tilt...\n");
+        Console.WriteLine("Demonstrating pan and tilt servo control...\n");
 
         try
         {
-            // PanTiltHat lives in Tobot.Device.PanTiltHat
+            // Create PanTiltHat with default settings (2 second idle timeout)
             using var panTilt = new Tobot.Device.PanTiltHat.PanTiltHat();
 
-            // Center
-            panTilt.Center();
+            // Center position (0°, 0°)
+            Console.WriteLine("▶ Centering servos...");
+            panTilt.Pan(0);
+            panTilt.Tilt(0);
             Thread.Sleep(1000);
 
-            // Sweep pan: -60 -> 60
+            // Sweep pan: -60° -> +60°
+            Console.WriteLine("\n▶ Pan sweep: -60° to +60°");
             for (int a = -60; a <= 60; a += 15)
             {
-                panTilt.SetPanAngle(a);
-                Console.WriteLine($"Pan: {a}°");
+                panTilt.Pan(a);
+                Console.WriteLine($"  Pan: {a}° (current: {panTilt.CurrentPanAngle}°)");
                 Thread.Sleep(250);
             }
-            for (int a = 60; a >= -60; a -= 15)
+            
+            // Return to center
+            Console.WriteLine("\n▶ Returning to center...");
+            for (int a = 60; a >= 0; a -= 15)
             {
-                panTilt.SetPanAngle(a);
-                Console.WriteLine($"Pan: {a}°");
-                Thread.Sleep(250);
+                panTilt.Pan(a);
+                Thread.Sleep(200);
             }
 
-            // Sweep tilt: -30 -> 30
+            // Sweep tilt: -30° -> +30°
+            Console.WriteLine("\n▶ Tilt sweep: -30° to +30°");
             for (int a = -30; a <= 30; a += 10)
             {
-                panTilt.SetTiltAngle(a);
-                Console.WriteLine($"Tilt: {a}°");
+                panTilt.Tilt(a);
+                Console.WriteLine($"  Tilt: {a}° (current: {panTilt.CurrentTiltAngle}°)");
                 Thread.Sleep(300);
             }
-            for (int a = 30; a >= -30; a -= 10)
+            
+            // Return to center
+            Console.WriteLine("\n▶ Returning to center...");
+            for (int a = 30; a >= 0; a -= 10)
             {
-                panTilt.SetTiltAngle(a);
-                Console.WriteLine($"Tilt: {a}°");
-                Thread.Sleep(300);
+                panTilt.Tilt(a);
+                Thread.Sleep(200);
             }
 
-            // Combined movement
-            Console.WriteLine("\n▶ Combined movement");
-            panTilt.SetAngles(-30, 20);
+            // Combined movement demonstration
+            Console.WriteLine("\n▶ Combined movement pattern");
+            panTilt.Pan(-45);
+            panTilt.Tilt(20);
+            Console.WriteLine("  Position: (-45°, 20°)");
             Thread.Sleep(600);
-            panTilt.SetAngles(30, -10);
+            
+            panTilt.Pan(45);
+            panTilt.Tilt(-20);
+            Console.WriteLine("  Position: (45°, -20°)");
             Thread.Sleep(600);
-            panTilt.Center();
+            
+            panTilt.Pan(0);
+            panTilt.Tilt(0);
+            Console.WriteLine("  Position: (0°, 0°) - Centered");
+            Thread.Sleep(500);
 
-            Console.WriteLine("\n✅ Pan-Tilt demo complete!");
+            // Read back current positions
+            Console.WriteLine("\n▶ Reading positions from device...");
+            var currentPan = panTilt.GetPan();
+            var currentTilt = panTilt.GetTilt();
+            Console.WriteLine($"  Reported Pan: {currentPan}°");
+            Console.WriteLine($"  Reported Tilt: {currentTilt}°");
+
+            Console.WriteLine($"\n▶ Idle timeout: {panTilt.IdleTimeout} seconds");
+            Console.WriteLine("  (Servos will auto-disable after inactivity)\n");
+
+            Console.WriteLine("✅ Pan-Tilt demo complete!");
         }
         catch (Exception ex)
         {

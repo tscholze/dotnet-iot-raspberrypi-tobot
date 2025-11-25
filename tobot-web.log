@@ -1,0 +1,16 @@
++ dotnet run --project Tobot.Web
+Using launch settings from Tobot.Web/Properties/launchSettings.json...
+Building...
+/home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Device/ExplorerHat/Digital/DigitalInput.cs(48,124): warning CS8604: Possible null reference argument for parameter 'callback' in 'void GpioController.RegisterCallbackForPinValueChangedEvent(int pinNumber, PinEventTypes eventTypes, PinChangeEventHandler callback)'. [/home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Device/Tobot.Device.csproj]
+/home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Device/ExplorerHat/Digital/DigitalInput.cs(49,83): warning CS8604: Possible null reference argument for parameter 'callback' in 'void GpioController.UnregisterCallbackForPinValueChangedEvent(int pinNumber, PinChangeEventHandler callback)'. [/home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Device/Tobot.Device.csproj]
+/home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Device/PanTiltHat/PanTiltHat.cs(65,27): warning CS0414: The field 'PanTiltHat._ownsDevice' is assigned but its value is never used [/home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Device/Tobot.Device.csproj]
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://0.0.0.0:5247
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/pi/Code/dotnet-iot-raspberrypi-tobot/Tobot.Web
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...

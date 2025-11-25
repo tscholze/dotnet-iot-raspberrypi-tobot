@@ -1,211 +1,516 @@
 using System;
 using System.Device.I2c;
+using System.Threading;
 
 namespace Tobot.Device.PanTiltHat;
 
 /// <summary>
-/// Configuration for the Pan-Tilt HAT.
+/// Driver for the Pimoroni Pan-Tilt HAT.
+/// Communicates with the HAT's microcontroller over I2C to control pan and tilt servos.
+/// The HAT uses a microcontroller at I2C address 0x15 that handles servo PWM generation.
 /// </summary>
-public sealed class PanTiltConfig
-{
-    /// <summary>
-    /// I2C bus identifier. Defaults to 1 on Raspberry Pi.
-    /// </summary>
-    public int I2cBusId { get; init; } = 1;
-
-    /// <summary>
-    /// I2C address of the PCA9685 controller. Default is 0x40.
-    /// </summary>
-    public int I2cAddress { get; init; } = 0x0F;
-
-    /// <summary>
-    /// PWM frequency in Hz for servo control. Default is 50 Hz.
-    /// </summary>
-    public double PwmFrequencyHz { get; init; } = 50.0;
-
-    /// <summary>
-    /// Minimum pulse width in microseconds corresponding to -90°.
-    /// </summary>
-    public int MinPulseUs { get; init; } = 500;
-
-    /// <summary>
-    /// Maximum pulse width in microseconds corresponding to +90°.
-    /// </summary>
-    public int MaxPulseUs { get; init; } = 2500;
-
-    /// <summary>
-    /// Channel index for the PAN servo on the PCA9685 (0-15). Defaults to 0.
-    /// </summary>
-    public int PanChannel { get; init; } = 0;
-
-    /// <summary>
-    /// Channel index for the TILT servo on the PCA9685 (0-15). Defaults to 1.
-    /// </summary>
-    public int TiltChannel { get; init; } = 1;
-}
-
-/// <summary>
-/// Driver for the Pimoroni Pan-Tilt HAT using a PCA9685 PWM controller over I2C.
-/// Provides high-level methods to set pan and tilt angles, center the gimbal,
-/// and enable/disable (sleep/wake) the PWM controller.
-/// </summary>
+/// <remarks>
+/// This driver implements the same protocol as the official Pimoroni Python library.
+/// Default servo pulse ranges are 575-2325 microseconds, corresponding to -90° to +90°.
+/// Servos can be automatically disabled after a configurable idle timeout to save power.
+/// </remarks>
 public sealed class PanTiltHat : IDisposable
 {
+    #region Register Definitions
+    
     /// <summary>
-    /// Underlying PCA9685 PWM controller instance used to drive the pan and tilt servos.
+    /// Configuration register address. Controls servo enable states and light settings.
     /// </summary>
-    private readonly Pca9685 _pwm;
+    private const byte REG_CONFIG = 0x00;
+    
     /// <summary>
-    /// Configuration settings controlling I2C bus/address, pulse range and channel mapping.
+    /// Servo 1 (Pan) register address. Stores pulse width in microseconds as a 16-bit word.
     /// </summary>
-    private readonly PanTiltConfig _config;
+    private const byte REG_SERVO1 = 0x03;
+    
     /// <summary>
-    /// Indicates whether this instance created (and therefore owns) the I2C device.
+    /// Servo 2 (Tilt) register address. Stores pulse width in microseconds as a 16-bit word.
+    /// </summary>
+    private const byte REG_SERVO2 = 0x01;
+    
+    /// <summary>
+    /// WS2812 LED data register base address (not implemented in this driver).
+    /// </summary>
+    private const byte REG_WS2812 = 0x05;
+    
+    /// <summary>
+    /// Update register for triggering LED updates (not implemented in this driver).
+    /// </summary>
+    private const byte REG_UPDATE = 0x4E;
+    
+    #endregion
+
+    #region Constants
+    
+    /// <summary>
+    /// Default I2C bus number for Raspberry Pi.
+    /// </summary>
+    private const int DefaultI2cBus = 1;
+    
+    /// <summary>
+    /// I2C address of the Pan-Tilt HAT microcontroller.
+    /// </summary>
+    private const int DefaultI2cAddress = 0x15;
+    
+    /// <summary>
+    /// Default idle timeout in seconds. Servos are automatically disabled after this period of inactivity.
+    /// </summary>
+    private const double DefaultIdleTimeout = 2.0;
+    
+    /// <summary>
+    /// Default minimum pulse width in microseconds for servos. Corresponds to -90°.
+    /// </summary>
+    private const int DefaultServoMin = 575;
+    
+    /// <summary>
+    /// Default maximum pulse width in microseconds for servos. Corresponds to +90°.
+    /// </summary>
+    private const int DefaultServoMax = 2325;
+    
+    /// <summary>
+    /// Maximum number of I2C operation retry attempts on communication failure.
+    /// </summary>
+    private const int I2cRetries = 10;
+    
+    /// <summary>
+    /// Delay in milliseconds between I2C retry attempts.
+    /// </summary>
+    private const int I2cRetryDelayMs = 10;
+    
+    #endregion
+
+    #region Private Fields
+    
+    /// <summary>
+    /// The I2C device for communicating with the Pan-Tilt HAT microcontroller.
+    /// </summary>
+    private readonly I2cDevice _device;
+    
+    /// <summary>
+    /// Indicates whether this instance owns the I2C device and should dispose it.
     /// </summary>
     private readonly bool _ownsDevice;
+    
     /// <summary>
-    /// Tracks disposal state to prevent double-disposal of resources.
+    /// Tracks whether this instance has been disposed.
     /// </summary>
     private bool _disposed;
+    
+    /// <summary>
+    /// Idle timeout in seconds. Servos are automatically disabled after this period of inactivity.
+    /// Set to 0 to disable automatic timeout.
+    /// </summary>
+    private double _idleTimeout = DefaultIdleTimeout;
+    
+    /// <summary>
+    /// Timer for automatically disabling servo 1 after idle timeout.
+    /// </summary>
+    private Timer? _servo1Timer;
+    
+    /// <summary>
+    /// Timer for automatically disabling servo 2 after idle timeout.
+    /// </summary>
+    private Timer? _servo2Timer;
+    
+    /// <summary>
+    /// Flag indicating whether servo 1 (pan) is currently enabled.
+    /// </summary>
+    private bool _enableServo1;
+    
+    /// <summary>
+    /// Flag indicating whether servo 2 (tilt) is currently enabled.
+    /// </summary>
+    private bool _enableServo2;
+    
+    /// <summary>
+    /// Last commanded angle for servo 1 (pan) in degrees.
+    /// </summary>
+    private int _lastPanAngle;
+    
+    /// <summary>
+    /// Last commanded angle for servo 2 (tilt) in degrees.
+    /// </summary>
+    private int _lastTiltAngle;
+    
+    #endregion
 
+    #region Constructor and Initialization
+    
     /// <summary>
-    /// Cached last commanded pan angle in degrees.
+    /// Initializes a new instance of the <see cref="PanTiltHat"/> class with default settings.
+    /// Creates an I2C connection on bus 1 at address 0x15.
+    /// Servos are configured with pulse range 575-2325 microseconds and 2 second idle timeout.
     /// </summary>
-    private double _currentPan;
-    /// <summary>
-    /// Cached last commanded tilt angle in degrees.
-    /// </summary>
-    private double _currentTilt;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PanTiltHat"/> class.
-    /// </summary>
-    /// <param name="i2cDevice">Optional I2C device. If not provided, one will be created using <paramref name="config"/>.</param>
-    /// <param name="config">Configuration for the device. If null, defaults are used.</param>
-    public PanTiltHat(I2cDevice? i2cDevice = null, PanTiltConfig? config = null)
+    public PanTiltHat()
     {
-        _config = config ?? new PanTiltConfig();
+        var settings = new I2cConnectionSettings(DefaultI2cBus, DefaultI2cAddress);
+        _device = I2cDevice.Create(settings);
+        _ownsDevice = true;
+        
+        // Initialize: enable both servos
+        _enableServo1 = true;
+        _enableServo2 = true;
+        SetConfig();
+    }
+    
+    #endregion
 
-        if (i2cDevice is null)
+    #region Public Properties
+    
+    /// <summary>
+    /// Gets or sets the idle timeout in seconds.
+    /// After this period of inactivity, servos are automatically disabled to save power.
+    /// Set to 0 to disable automatic timeout.
+    /// </summary>
+    public double IdleTimeout
+    {
+        get => _idleTimeout;
+        set => _idleTimeout = value;
+    }
+    
+    /// <summary>
+    /// Gets the last commanded pan angle in degrees (-90 to +90).
+    /// </summary>
+    public int CurrentPanAngle => _lastPanAngle;
+    
+    /// <summary>
+    /// Gets the last commanded tilt angle in degrees (-90 to +90).
+    /// </summary>
+    public int CurrentTiltAngle => _lastTiltAngle;
+    
+    #endregion
+
+    #region Public Servo Control Methods
+    
+    /// <summary>
+    /// Sets the pan (servo 1) angle.
+    /// </summary>
+    /// <param name="angle">Angle in degrees from -90 to +90.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when angle is outside the valid range.</exception>
+    public void Pan(int angle)
+    {
+        CheckAngleRange(angle);
+        
+        // Enable servo if not already enabled
+        if (!_enableServo1)
         {
-            var settings = new I2cConnectionSettings(_config.I2cBusId, _config.I2cAddress);
-            i2cDevice = I2cDevice.Create(settings);
-            _ownsDevice = true;
+            _enableServo1 = true;
+            SetConfig();
+
+            Thread.Sleep(300);
         }
-
-        _pwm = new Pca9685(i2cDevice);
-        _pwm.SetPwmFrequency(_config.PwmFrequencyHz);
-
-        // Initialize to center
-        Center();
+        
+        var us = DegreesToMicroseconds(angle, DefaultServoMin, DefaultServoMax);
+        WriteWord(REG_SERVO1, (ushort)us);
+        _lastPanAngle = angle;
+        
+        // Reset idle timer
+        if (_idleTimeout > 0)
+        {
+            _servo1Timer?.Dispose();
+            _servo1Timer = new Timer(_ => DisableServo1(), null, 
+                TimeSpan.FromSeconds(_idleTimeout), Timeout.InfiniteTimeSpan);
+        }
     }
-
+    
     /// <summary>
-    /// Gets the current pan angle in degrees.
+    /// Sets the tilt (servo 2) angle.
     /// </summary>
-    public double CurrentPanAngle => _currentPan;
-
-    /// <summary>
-    /// Gets the current tilt angle in degrees.
-    /// </summary>
-    public double CurrentTiltAngle => _currentTilt;
-
-    /// <summary>
-    /// Sets both pan and tilt angles in one operation.
-    /// </summary>
-    /// <param name="panDegrees">Pan angle in degrees (-90..90).</param>
-    /// <param name="tiltDegrees">Tilt angle in degrees (-90..90).</param>
-    public void SetAngles(double panDegrees, double tiltDegrees)
+    /// <param name="angle">Angle in degrees from -90 to +90.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when angle is outside the valid range.</exception>
+    public void Tilt(int angle)
     {
-        SetPanAngle(panDegrees);
-        SetTiltAngle(tiltDegrees);
-    }
+        CheckAngleRange(angle);
+        
+        // Enable servo if not already enabled
+        if (!_enableServo2)
+        {
+            _enableServo2 = true;
+            SetConfig();
 
+            Thread.Sleep(300);
+        }
+        
+        var us = DegreesToMicroseconds(angle, DefaultServoMin, DefaultServoMax);
+        WriteWord(REG_SERVO2, (ushort)us);
+        _lastTiltAngle = angle;
+        
+        // Reset idle timer
+        if (_idleTimeout > 0)
+        {
+            _servo2Timer?.Dispose();
+            _servo2Timer = new Timer(_ => DisableServo2(), null, 
+                TimeSpan.FromSeconds(_idleTimeout), Timeout.InfiniteTimeSpan);
+        }
+    }
+    
     /// <summary>
-    /// Sets the pan angle.
+    /// Gets the current pan (servo 1) angle by reading back from the device.
     /// </summary>
-    /// <param name="degrees">Angle in degrees (-90..90).</param>
-    public void SetPanAngle(double degrees)
+    /// <returns>Current angle in degrees, or 0 if unable to read.</returns>
+    public int GetPan()
     {
-        degrees = ClampAngle(degrees);
-        _currentPan = degrees;
-        var pulseUs = AngleToPulseUs(degrees);
-        SetPulseUs(_config.PanChannel, pulseUs);
+        try
+        {
+            var us = ReadWord(REG_SERVO1);
+            return MicrosecondsToAngles(us, DefaultServoMin, DefaultServoMax);
+        }
+        catch
+        {
+            return 0;
+        }
     }
-
+    
     /// <summary>
-    /// Sets the tilt angle.
+    /// Gets the current tilt (servo 2) angle by reading back from the device.
     /// </summary>
-    /// <param name="degrees">Angle in degrees (-90..90).</param>
-    public void SetTiltAngle(double degrees)
+    /// <returns>Current angle in degrees, or 0 if unable to read.</returns>
+    public int GetTilt()
     {
-        degrees = ClampAngle(degrees);
-        _currentTilt = degrees;
-        var pulseUs = AngleToPulseUs(degrees);
-        SetPulseUs(_config.TiltChannel, pulseUs);
+        try
+        {
+            var us = ReadWord(REG_SERVO2);
+            return MicrosecondsToAngles(us, DefaultServoMin, DefaultServoMax);
+        }
+        catch
+        {
+            return 0;
+        }
     }
-
+    
     /// <summary>
-    /// Centers both servos at 0°.
+    /// Enables or disables a servo.
+    /// Disabling a servo turns off the drive signal to save power.
     /// </summary>
-    public void Center()
+    /// <param name="servoIndex">Servo index: 1 for pan, 2 for tilt.</param>
+    /// <param name="enable">True to enable, false to disable.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when servoIndex is not 1 or 2.</exception>
+    public void ServoEnable(int servoIndex, bool enable)
     {
-        SetAngles(0, 0);
+        if (servoIndex != 1 && servoIndex != 2)
+            throw new ArgumentOutOfRangeException(nameof(servoIndex), "Servo index must be 1 or 2");
+        
+        if (servoIndex == 1)
+            _enableServo1 = enable;
+        else
+            _enableServo2 = enable;
+        
+        SetConfig();
     }
+    
 
+    
+    #endregion
+
+    #region Private Helper Methods
+    
     /// <summary>
-    /// Converts an angle in degrees (-90..90) to a pulse width in microseconds within configured limits.
+    /// Disables servo 1 (pan) by clearing its enable flag and updating the configuration register.
+    /// Called automatically by the idle timeout timer.
     /// </summary>
-    /// <param name="degrees">Angle in degrees.</param>
+    private void DisableServo1()
+    {
+        _enableServo1 = false;
+        SetConfig();
+    }
+    
+    /// <summary>
+    /// Disables servo 2 (tilt) by clearing its enable flag and updating the configuration register.
+    /// Called automatically by the idle timeout timer.
+    /// </summary>
+    private void DisableServo2()
+    {
+        _enableServo2 = false;
+        SetConfig();
+    }
+    
+    /// <summary>
+    /// Writes the configuration byte to the HAT's config register.
+    /// The config byte encodes servo enable states and light settings.
+    /// Bit 0: Servo 1 enable, Bit 1: Servo 2 enable, Bit 2: Lights enable (not used here).
+    /// </summary>
+    private void SetConfig()
+    {
+        byte config = 0;
+        if (_enableServo1) config |= 0x01;
+        if (_enableServo2) config |= 0x02;
+        // Bit 2 (lights enable) left at 0
+        
+        WriteByte(REG_CONFIG, config);
+    }
+    
+    /// <summary>
+    /// Converts an angle in degrees to a pulse width in microseconds.
+    /// </summary>
+    /// <param name="angle">Angle in degrees from -90 to +90.</param>
+    /// <param name="minUs">Minimum pulse width in microseconds (corresponds to -90°).</param>
+    /// <param name="maxUs">Maximum pulse width in microseconds (corresponds to +90°).</param>
     /// <returns>Pulse width in microseconds.</returns>
-    private int AngleToPulseUs(double degrees)
+    private static int DegreesToMicroseconds(int angle, int minUs, int maxUs)
     {
-        // Map [-90, 90] to [MinPulseUs, MaxPulseUs]
-        var t = (degrees + 90.0) / 180.0; // 0..1
-        var us = _config.MinPulseUs + t * (_config.MaxPulseUs - _config.MinPulseUs);
-        return (int)Math.Round(us);
+        // Map angle from [-90, 90] to [0, 180]
+        var normalized = angle + 90;
+        var range = maxUs - minUs;
+        var us = minUs + (range * normalized / 180);
+        return us;
     }
-
+    
     /// <summary>
-    /// Sets the raw pulse width in microseconds on a given channel.
+    /// Converts a pulse width in microseconds to an angle in degrees.
     /// </summary>
-    /// <param name="channel">PCA9685 channel (0-15).</param>
-    /// <param name="microseconds">Pulse length in microseconds.</param>
-    private void SetPulseUs(int channel, int microseconds)
+    /// <param name="us">Pulse width in microseconds.</param>
+    /// <param name="minUs">Minimum pulse width in microseconds (corresponds to -90°).</param>
+    /// <param name="maxUs">Maximum pulse width in microseconds (corresponds to +90°).</param>
+    /// <returns>Angle in degrees from -90 to +90.</returns>
+    private static int MicrosecondsToAngles(int us, int minUs, int maxUs)
     {
-        // Convert microseconds to 12-bit ticks based on current period
-        var periodUs = 1_000_000.0 / _config.PwmFrequencyHz; // e.g., 20,000us for 50 Hz
-        var ticks = (int)Math.Round((microseconds / periodUs) * 4096.0);
-        ticks = Math.Clamp(ticks, 0, 4095);
-        _pwm.SetPwm(channel, 0, ticks);
+        var range = maxUs - minUs;
+        var angle = (us - minUs) * 180 / range;
+        return angle - 90;
     }
-
+    
     /// <summary>
-    /// Ensures the provided angle is within -90..90.
+    /// Validates that an angle is within the valid range of -90 to +90 degrees.
     /// </summary>
-    /// <param name="degrees">Angle in degrees.</param>
-    private static double ClampAngle(double degrees)
-        => Math.Clamp(degrees, -90.0, 90.0);
-
-    /// <summary>
-    /// Puts the PWM controller into a known centered state.
-    /// </summary>
-    public void Wake()
+    /// <param name="angle">Angle to validate.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when angle is outside valid range.</exception>
+    private static void CheckAngleRange(int angle)
     {
-        // No-op for minimal driver; ensured by constructor and SetPwmFrequency
-        Center();
+        if (angle < -90 || angle > 90)
+            throw new ArgumentOutOfRangeException(nameof(angle), 
+                $"Angle must be between -90 and 90, got {angle}");
     }
+    
+    #endregion
 
+    #region I2C Communication Methods
+    
     /// <summary>
-    /// Releases resources used by the PanTilt HAT.
+    /// Writes a single byte to a register on the HAT with retry logic.
+    /// </summary>
+    /// <param name="register">Register address.</param>
+    /// <param name="value">Byte value to write.</param>
+    /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
+    private void WriteByte(byte register, byte value)
+    {
+        for (int attempt = 0; attempt < I2cRetries; attempt++)
+        {
+            try
+            {
+                Span<byte> buffer = stackalloc byte[2];
+                buffer[0] = register;
+                buffer[1] = value;
+                _device.Write(buffer);
+                return;
+            }
+            catch (Exception)
+            {
+                if (attempt == I2cRetries - 1)
+                    throw new System.IO.IOException($"Failed to write byte to register 0x{register:X2} after {I2cRetries} attempts");
+                Thread.Sleep(I2cRetryDelayMs);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Writes a 16-bit word (little-endian) to a register on the HAT with retry logic.
+    /// This matches the SMBus write_word_data behavior: low byte first, then high byte.
+    /// </summary>
+    /// <param name="register">Register address.</param>
+    /// <param name="value">16-bit value to write.</param>
+    /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
+    private void WriteWord(byte register, ushort value)
+    {
+        for (int attempt = 0; attempt < I2cRetries; attempt++)
+        {
+            try
+            {
+                Span<byte> buffer = stackalloc byte[3];
+                buffer[0] = register;
+                buffer[1] = (byte)(value & 0xFF);        // Low byte
+                buffer[2] = (byte)((value >> 8) & 0xFF); // High byte
+                _device.Write(buffer);
+                return;
+            }
+            catch (Exception)
+            {
+                if (attempt == I2cRetries - 1)
+                    throw new System.IO.IOException($"Failed to write word to register 0x{register:X2} after {I2cRetries} attempts");
+                Thread.Sleep(I2cRetryDelayMs);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Reads a 16-bit word (little-endian) from a register on the HAT with retry logic.
+    /// </summary>
+    /// <param name="register">Register address.</param>
+    /// <returns>16-bit value read from the register.</returns>
+    /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
+    private ushort ReadWord(byte register)
+    {
+        for (int attempt = 0; attempt < I2cRetries; attempt++)
+        {
+            try
+            {
+                _device.WriteByte(register);
+                Span<byte> buffer = stackalloc byte[2];
+                _device.Read(buffer);
+                return (ushort)(buffer[0] | (buffer[1] << 8));
+            }
+            catch (Exception)
+            {
+                if (attempt == I2cRetries - 1)
+                    throw new System.IO.IOException($"Failed to read word from register 0x{register:X2} after {I2cRetries} attempts");
+                Thread.Sleep(I2cRetryDelayMs);
+            }
+        }
+        
+        return 0; // unreachable
+    }
+    
+    #endregion
+
+    #region IDisposable Implementation
+    
+    /// <summary>
+    /// Releases all resources used by the <see cref="PanTiltHat"/> instance.
+    /// Disables both servos and disposes timers and the I2C device if owned.
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
-        _pwm?.Dispose();
-        // If we created the I2C device internally, it is disposed by _pwm.
+        if (_disposed)
+            return;
+        
+        // Cancel idle timers
+        _servo1Timer?.Dispose();
+        _servo2Timer?.Dispose();
+        
+        // Disable servos
+        _enableServo1 = false;
+        _enableServo2 = false;
+        try
+        {
+            SetConfig();
+        }
+        catch
+        {
+            // Ignore errors during disposal
+        }
+        
+        // Dispose I2C device if we own it
+        if (_ownsDevice)
+        {
+            _device?.Dispose();
+        }
+        
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
+    
+    #endregion
 }
- 
