@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Tobot.Device.ExplorerHat;
+using Tobot.Device.HcSr04;
 
 namespace Tobot;
 
@@ -47,9 +48,10 @@ class Program
             Console.WriteLine("│  7. Robot Control System    - Complete robot control   │");
             Console.WriteLine("│  8. System Status Check     - Test all components      │");
             Console.WriteLine("│  9. Pan-Tilt HAT Demo       - Move pan & tilt servos   │");
+            Console.WriteLine("│ 10. HC-SR04 Distance Demo   - Ultrasonic range test    │");
             Console.WriteLine("│  0. Exit                                                │");
             Console.WriteLine("└─────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-9): ");
+            Console.Write("\nEnter your choice (0-10): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -83,11 +85,14 @@ class Program
                 case "9":
                     RunPanTiltDemo();
                     break;
+                case "10":
+                    RunHcSr04Demo();
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-9.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-10.");
                     break;
             }
 
@@ -128,9 +133,16 @@ class Program
             case "check":
                 RunSystemCheck();
                 break;
+            case "pantilt":
+                RunPanTiltDemo();
+                break;
+            case "hcsr04":
+            case "ultrasonic":
+                RunHcSr04Demo();
+                break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04");
                 break;
         }
     }
@@ -568,6 +580,112 @@ class Program
     }
 
     /// <summary>
+    /// Performs a comprehensive system check of all Explorer HAT components.
+    /// Tests connectivity and basic functionality of all subsystems.
+    /// </summary>
+    static void RunSystemCheck()
+    {
+        Console.WriteLine("🔧 Explorer HAT System Check");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Testing all components...\n");
+
+        try
+        {
+            using var hat = new ExplorerHat();
+
+            // Test LEDs
+            Console.Write("Testing LEDs...          ");
+            hat.Light.On();
+            Thread.Sleep(500);
+            hat.Light.Off();
+            Console.WriteLine("✅ OK");
+
+            // Test Outputs
+            Console.Write("Testing Outputs...       ");
+            hat.Output.On();
+            Thread.Sleep(500);
+            hat.Output.Off();
+            Console.WriteLine("✅ OK");
+
+            // Test Inputs
+            Console.Write("Testing Inputs...        ");
+            bool i1 = hat.Input.One.Read();
+            bool i2 = hat.Input.Two.Read();
+            Console.WriteLine("✅ OK");
+
+            // Test Analog
+            Console.Write("Testing Analog ADC...    ");
+            double v1 = hat.Analog.One.Read();
+            Console.WriteLine("✅ OK");
+
+            // Test Touch
+            Console.Write("Testing Touch Sensors... ");
+            byte touch = hat.Touch.ReadAll();
+            Console.WriteLine("✅ OK");
+
+            // Test Motors
+            Console.Write("Testing Motors...        ");
+            hat.Motor.One.Forward(50);
+            Thread.Sleep(500);
+            hat.Motor.Stop();
+            Console.WriteLine("✅ OK");
+
+            Console.WriteLine("\n╔═══════════════════════════════════════╗");
+            Console.WriteLine("║  System Check Complete - All OK! ✅  ║");
+            Console.WriteLine("╚═══════════════════════════════════════╝");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n❌ System Check Failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Streams HC-SR04 distance measurements to the console.
+    /// </summary>
+    static void RunHcSr04Demo()
+    {
+        Console.WriteLine("📐 HC-SR04 Distance Demo");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Polling the ultrasonic range finder...\n");
+
+        const int triggerPin = 12; // BCM pin driving the sensor's trigger input
+        const int echoPin = 22;    // BCM pin connected to the sensor's echo output
+        const int iterations = 20;
+        const int delayMs = 500;
+        const int samplesPerReading = 5;
+
+        Console.WriteLine($"Trigger Pin (BCM): {triggerPin}, Echo Pin (BCM): {echoPin}");
+        Console.WriteLine("Update the pin numbers above to match your wiring.\n");
+
+        try
+        {
+            using var sensor = new HcSr04Sensor(triggerPin, echoPin);
+
+            for (int i = 0; i < iterations; i++)
+            {
+                string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                if (sensor.TryReadDistance(out double distanceCm, samplesPerReading))
+                {
+                    Console.WriteLine($"[{timestamp}] Distance: {distanceCm:F1} cm");
+                }
+                else
+                {
+                    Console.WriteLine($"[{timestamp}] ⚠️  Measurement failed. Ensure the target is within range.");
+                }
+
+                Thread.Sleep(delayMs);
+            }
+
+            Console.WriteLine("\n✅ HC-SR04 demo complete!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error initializing HC-SR04 sensor: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Demonstrates the Pan-Tilt HAT by sweeping pan and tilt angles.
     /// Requires a Pimoroni Pan-Tilt HAT connected via I2C (default address 0x15).
     /// </summary>
@@ -654,67 +772,6 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Performs a comprehensive system check of all Explorer HAT components.
-    /// Tests connectivity and basic functionality of all subsystems.
-    /// </summary>
-    static void RunSystemCheck()
-    {
-        Console.WriteLine("🔧 Explorer HAT System Check");
-        Console.WriteLine("═══════════════════════════════════════");
-        Console.WriteLine("Testing all components...\n");
-
-        try
-        {
-            using var hat = new ExplorerHat();
-
-            // Test LEDs
-            Console.Write("Testing LEDs...          ");
-            hat.Light.On();
-            Thread.Sleep(500);
-            hat.Light.Off();
-            Console.WriteLine("✅ OK");
-
-            // Test Outputs
-            Console.Write("Testing Outputs...       ");
-            hat.Output.On();
-            Thread.Sleep(500);
-            hat.Output.Off();
-            Console.WriteLine("✅ OK");
-
-            // Test Inputs
-            Console.Write("Testing Inputs...        ");
-            bool i1 = hat.Input.One.Read();
-            bool i2 = hat.Input.Two.Read();
-            Console.WriteLine("✅ OK");
-
-            // Test Analog
-            Console.Write("Testing Analog ADC...    ");
-            double v1 = hat.Analog.One.Read();
-            Console.WriteLine("✅ OK");
-
-            // Test Touch
-            Console.Write("Testing Touch Sensors... ");
-            byte touch = hat.Touch.ReadAll();
-            Console.WriteLine("✅ OK");
-
-            // Test Motors
-            Console.Write("Testing Motors...        ");
-            hat.Motor.One.Forward(50);
-            Thread.Sleep(500);
-            hat.Motor.Stop();
-            Console.WriteLine("✅ OK");
-
-            Console.WriteLine("\n╔═══════════════════════════════════════╗");
-            Console.WriteLine("║  System Check Complete - All OK! ✅  ║");
-            Console.WriteLine("╚═══════════════════════════════════════╝");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"\n❌ System Check Failed: {ex.Message}");
         }
     }
 }
