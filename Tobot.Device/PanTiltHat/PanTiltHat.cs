@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Threading;
 using System.Device.I2c;
 
 namespace Tobot.Device.PanTiltHat;
@@ -59,6 +62,11 @@ public sealed class PanTiltHat : IDisposable
     /// Default idle timeout in seconds. Servos are automatically disabled after this period of inactivity.
     /// </summary>
     private const double DefaultIdleTimeout = 2.0;
+
+    /// <summary>
+    /// Default delay applied after re-enabling a servo before sending new commands.
+    /// </summary>
+    private static readonly TimeSpan DefaultServoEnableDelay = TimeSpan.FromMilliseconds(300);
     
     /// <summary>
     /// Default minimum pulse width in microseconds for servos. Corresponds to -90°.
@@ -104,6 +112,11 @@ public sealed class PanTiltHat : IDisposable
     /// Set to 0 to disable automatic timeout.
     /// </summary>
     private double _idleTimeout = DefaultIdleTimeout;
+
+    /// <summary>
+    /// Delay applied after re-enabling a servo before issuing the next pulse command.
+    /// </summary>
+    private TimeSpan _servoEnableDelay = DefaultServoEnableDelay;
     
     /// <summary>
     /// Timer for automatically disabling servo 1 after idle timeout.
@@ -170,6 +183,24 @@ public sealed class PanTiltHat : IDisposable
         get => _idleTimeout;
         set => _idleTimeout = value;
     }
+
+    /// <summary>
+    /// Gets or sets the delay applied after re-enabling a servo before sending the next command.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the supplied delay is negative.</exception>
+    public TimeSpan ServoEnableDelay
+    {
+        get => _servoEnableDelay;
+        set
+        {
+            if (value < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "Servo enable delay cannot be negative.");
+            }
+
+            _servoEnableDelay = value;
+        }
+    }
     
     /// <summary>
     /// Gets the last commanded pan angle in degrees (-90 to +90).
@@ -200,7 +231,10 @@ public sealed class PanTiltHat : IDisposable
             _enableServo1 = true;
             SetConfig();
 
-            Thread.Sleep(300);
+            if (_servoEnableDelay > TimeSpan.Zero)
+            {
+                Thread.Sleep(_servoEnableDelay);
+            }
         }
         
         var us = DegreesToMicroseconds(angle, DefaultServoMin, DefaultServoMax);
@@ -231,7 +265,10 @@ public sealed class PanTiltHat : IDisposable
             _enableServo2 = true;
             SetConfig();
 
-            Thread.Sleep(300);
+            if (_servoEnableDelay > TimeSpan.Zero)
+            {
+                Thread.Sleep(_servoEnableDelay);
+            }
         }
         
         var us = DegreesToMicroseconds(angle, DefaultServoMin, DefaultServoMax);
@@ -251,16 +288,25 @@ public sealed class PanTiltHat : IDisposable
     /// Gets the current pan (servo 1) angle by reading back from the device.
     /// </summary>
     /// <returns>Current angle in degrees, or 0 if unable to read.</returns>
-    public int GetPan()
+    public int GetPan() => TryGetPan(out var angle) ? angle : 0;
+
+    /// <summary>
+    /// Attempts to read the current pan (servo 1) angle.
+    /// </summary>
+    /// <param name="angle">Angle in degrees when the read succeeds.</param>
+    /// <returns><c>true</c> when the device returned a value; otherwise <c>false</c>.</returns>
+    public bool TryGetPan(out int angle)
     {
         try
         {
             var us = ReadWord(REG_SERVO1);
-            return MicrosecondsToAngles(us, DefaultServoMin, DefaultServoMax);
+            angle = MicrosecondsToAngles(us, DefaultServoMin, DefaultServoMax);
+            return true;
         }
         catch
         {
-            return 0;
+            angle = 0;
+            return false;
         }
     }
     
@@ -268,16 +314,25 @@ public sealed class PanTiltHat : IDisposable
     /// Gets the current tilt (servo 2) angle by reading back from the device.
     /// </summary>
     /// <returns>Current angle in degrees, or 0 if unable to read.</returns>
-    public int GetTilt()
+    public int GetTilt() => TryGetTilt(out var angle) ? angle : 0;
+
+    /// <summary>
+    /// Attempts to read the current tilt (servo 2) angle.
+    /// </summary>
+    /// <param name="angle">Angle in degrees when the read succeeds.</param>
+    /// <returns><c>true</c> when the device returned a value; otherwise <c>false</c>.</returns>
+    public bool TryGetTilt(out int angle)
     {
         try
         {
             var us = ReadWord(REG_SERVO2);
-            return MicrosecondsToAngles(us, DefaultServoMin, DefaultServoMax);
+            angle = MicrosecondsToAngles(us, DefaultServoMin, DefaultServoMax);
+            return true;
         }
         catch
         {
-            return 0;
+            angle = 0;
+            return false;
         }
     }
     
@@ -294,9 +349,21 @@ public sealed class PanTiltHat : IDisposable
             throw new ArgumentOutOfRangeException(nameof(servoIndex), "Servo index must be 1 or 2");
         
         if (servoIndex == 1)
+        {
             _enableServo1 = enable;
+            if (!enable)
+            {
+                _lastPanAngle = 0;
+            }
+        }
         else
+        {
             _enableServo2 = enable;
+            if (!enable)
+            {
+                _lastTiltAngle = 0;
+            }
+        }
         
         SetConfig();
     }
@@ -314,6 +381,7 @@ public sealed class PanTiltHat : IDisposable
     private void DisableServo1()
     {
         _enableServo1 = false;
+        _lastPanAngle = 0;
         SetConfig();
     }
     
@@ -324,6 +392,7 @@ public sealed class PanTiltHat : IDisposable
     private void DisableServo2()
     {
         _enableServo2 = false;
+        _lastTiltAngle = 0;
         SetConfig();
     }
     
@@ -396,23 +465,15 @@ public sealed class PanTiltHat : IDisposable
     /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
     private void WriteByte(byte register, byte value)
     {
-        for (int attempt = 0; attempt < I2cRetries; attempt++)
-        {
-            try
+        ExecuteWithRetry(
+            () =>
             {
                 Span<byte> buffer = stackalloc byte[2];
                 buffer[0] = register;
                 buffer[1] = value;
                 _device.Write(buffer);
-                return;
-            }
-            catch (Exception)
-            {
-                if (attempt == I2cRetries - 1)
-                    throw new System.IO.IOException($"Failed to write byte to register 0x{register:X2} after {I2cRetries} attempts");
-                Thread.Sleep(I2cRetryDelayMs);
-            }
-        }
+            },
+            $"write byte to register 0x{register:X2}");
     }
     
     /// <summary>
@@ -424,24 +485,16 @@ public sealed class PanTiltHat : IDisposable
     /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
     private void WriteWord(byte register, ushort value)
     {
-        for (int attempt = 0; attempt < I2cRetries; attempt++)
-        {
-            try
+        ExecuteWithRetry(
+            () =>
             {
                 Span<byte> buffer = stackalloc byte[3];
                 buffer[0] = register;
                 buffer[1] = (byte)(value & 0xFF);        // Low byte
                 buffer[2] = (byte)((value >> 8) & 0xFF); // High byte
                 _device.Write(buffer);
-                return;
-            }
-            catch (Exception)
-            {
-                if (attempt == I2cRetries - 1)
-                    throw new System.IO.IOException($"Failed to write word to register 0x{register:X2} after {I2cRetries} attempts");
-                Thread.Sleep(I2cRetryDelayMs);
-            }
-        }
+            },
+            $"write word to register 0x{register:X2}");
     }
     
     /// <summary>
@@ -452,24 +505,62 @@ public sealed class PanTiltHat : IDisposable
     /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
     private ushort ReadWord(byte register)
     {
-        for (int attempt = 0; attempt < I2cRetries; attempt++)
-        {
-            try
+        return ExecuteWithRetry(
+            () =>
             {
                 _device.WriteByte(register);
                 Span<byte> buffer = stackalloc byte[2];
                 _device.Read(buffer);
                 return (ushort)(buffer[0] | (buffer[1] << 8));
-            }
-            catch (Exception)
+            },
+            $"read word from register 0x{register:X2}");
+    }
+
+    /// <summary>
+    /// Executes an I2C operation with retry semantics and consistent error reporting.
+    /// </summary>
+    /// <param name="operation">Operation to execute.</param>
+    /// <param name="description">Human-readable description used in the exception message.</param>
+    /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
+    private void ExecuteWithRetry(Action operation, string description)
+    {
+        ExecuteWithRetry<object?>(() =>
+        {
+            operation();
+            return null;
+        }, description);
+    }
+
+    /// <summary>
+    /// Executes an I2C operation that returns a value with retry semantics.
+    /// </summary>
+    /// <typeparam name="T">Return type.</typeparam>
+    /// <param name="operation">Operation to execute.</param>
+    /// <param name="description">Human-readable description used in the exception message.</param>
+    /// <returns>The value produced by <paramref name="operation"/>.</returns>
+    /// <exception cref="IOException">Thrown when all retry attempts fail.</exception>
+    private T ExecuteWithRetry<T>(Func<T> operation, string description)
+    {
+        Exception? lastError = null;
+        for (int attempt = 0; attempt < I2cRetries; attempt++)
+        {
+            try
             {
+                return operation();
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
                 if (attempt == I2cRetries - 1)
-                    throw new System.IO.IOException($"Failed to read word from register 0x{register:X2} after {I2cRetries} attempts");
+                {
+                    throw new IOException($"Failed to {description} after {I2cRetries} attempts.", ex);
+                }
+
                 Thread.Sleep(I2cRetryDelayMs);
             }
         }
-        
-        return 0; // unreachable
+
+        throw new IOException($"Failed to {description} after {I2cRetries} attempts.", lastError);
     }
     
     #endregion
