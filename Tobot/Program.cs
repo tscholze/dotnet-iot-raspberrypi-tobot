@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Device.Gpio;
 using System.Threading;
+using Tobot.Device;
 using Tobot.Device.ExplorerHat;
-using Tobot.Device.HcSr04;
+using Tobot.Device.ExplorerHat.Digital;
 
 namespace Tobot;
 
@@ -19,20 +21,22 @@ class Program
         Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
         Console.WriteLine();
 
+        using var controller = new TobotController();
+
         if (args.Length == 0)
         {
-            ShowMenu();
+            ShowMenu(controller);
         }
         else
         {
-            RunExample(args[0]);
+            RunExample(controller, args[0]);
         }
     }
 
     /// <summary>
     /// Displays the interactive menu for selecting demo examples.
     /// </summary>
-    static void ShowMenu()
+    static void ShowMenu(TobotController controller)
     {
         while (true)
         {
@@ -59,34 +63,34 @@ class Program
             switch (choice)
             {
                 case "1":
-                    RunLedDemo();
+                    RunLedDemo(controller);
                     break;
                 case "2":
-                    RunInputMonitor();
+                    RunInputMonitor(controller);
                     break;
                 case "3":
-                    RunOutputControl();
+                    RunOutputControl(controller);
                     break;
                 case "4":
-                    RunAnalogReader();
+                    RunAnalogReader(controller);
                     break;
                 case "5":
-                    RunMotorDemo();
+                    RunMotorDemo(controller);
                     break;
                 case "6":
-                    RunTouchDemo();
+                    RunTouchDemo(controller);
                     break;
                 case "7":
-                    RunRobotControl();
+                    RunRobotControl(controller);
                     break;
                 case "8":
-                    RunSystemCheck();
+                    RunSystemCheck(controller);
                     break;
                 case "9":
-                    RunPanTiltDemo();
+                    RunPanTiltDemo(controller);
                     break;
                 case "10":
-                    RunHcSr04Demo();
+                    RunHcSr04Demo(controller);
                     break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
@@ -105,40 +109,40 @@ class Program
     /// <summary>
     /// Runs a specific example by name from command line arguments.
     /// </summary>
-    static void RunExample(string exampleName)
+    static void RunExample(TobotController controller, string exampleName)
     {
         switch (exampleName.ToLower())
         {
             case "led":
-                RunLedDemo();
+                RunLedDemo(controller);
                 break;
             case "input":
-                RunInputMonitor();
+                RunInputMonitor(controller);
                 break;
             case "output":
-                RunOutputControl();
+                RunOutputControl(controller);
                 break;
             case "analog":
-                RunAnalogReader();
+                RunAnalogReader(controller);
                 break;
             case "motor":
-                RunMotorDemo();
+                RunMotorDemo(controller);
                 break;
             case "touch":
-                RunTouchDemo();
+                RunTouchDemo(controller);
                 break;
             case "robot":
-                RunRobotControl();
+                RunRobotControl(controller);
                 break;
             case "check":
-                RunSystemCheck();
+                RunSystemCheck(controller);
                 break;
             case "pantilt":
-                RunPanTiltDemo();
+                RunPanTiltDemo(controller);
                 break;
             case "hcsr04":
             case "ultrasonic":
-                RunHcSr04Demo();
+                RunHcSr04Demo(controller);
                 break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
@@ -151,7 +155,7 @@ class Program
     /// Demonstrates LED control with various light patterns and effects.
     /// Shows sequential lighting, simultaneous control, and chase patterns.
     /// </summary>
-    static void RunLedDemo()
+    static void RunLedDemo(TobotController controller)
     {
         Console.WriteLine("🔆 LED Light Show Demo");
         Console.WriteLine("═══════════════════════════════════════");
@@ -159,7 +163,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             // Sequential LED activation
             Console.WriteLine("▶ Sequential lighting...");
@@ -229,7 +233,7 @@ class Program
     /// Monitors digital inputs and displays their state in real-time.
     /// Demonstrates event-driven input handling and state polling.
     /// </summary>
-    static void RunInputMonitor()
+    static void RunInputMonitor(TobotController controller)
     {
         Console.WriteLine("🔌 Digital Input Monitor");
         Console.WriteLine("═══════════════════════════════════════");
@@ -237,17 +241,21 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
-            // Setup event handlers
-            hat.Input.One.Changed += (s, e) => 
+            void Input1Changed(object? _, PinValueChangedEventArgs e) =>
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Input 1: {e.ChangeType}");
-            hat.Input.Two.Changed += (s, e) => 
+            void Input2Changed(object? _, PinValueChangedEventArgs e) =>
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Input 2: {e.ChangeType}");
-            hat.Input.Three.Changed += (s, e) => 
+            void Input3Changed(object? _, PinValueChangedEventArgs e) =>
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Input 3: {e.ChangeType}");
-            hat.Input.Four.Changed += (s, e) => 
+            void Input4Changed(object? _, PinValueChangedEventArgs e) =>
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Input 4: {e.ChangeType}");
+
+            hat.Input.One.Changed += Input1Changed;
+            hat.Input.Two.Changed += Input2Changed;
+            hat.Input.Three.Changed += Input3Changed;
+            hat.Input.Four.Changed += Input4Changed;
 
             Console.WriteLine("📊 Initial States:");
             Console.WriteLine($"  Input 1: {(hat.Input.One.Read() ? "HIGH" : "LOW")}");
@@ -257,7 +265,17 @@ class Program
             Console.WriteLine("\n👂 Listening for changes...\n");
 
             // Keep monitoring (would normally use cancellation token)
-            Thread.Sleep(30000); // Monitor for 30 seconds
+            try
+            {
+                Thread.Sleep(30000); // Monitor for 30 seconds
+            }
+            finally
+            {
+                hat.Input.One.Changed -= Input1Changed;
+                hat.Input.Two.Changed -= Input2Changed;
+                hat.Input.Three.Changed -= Input3Changed;
+                hat.Input.Four.Changed -= Input4Changed;
+            }
             
             Console.WriteLine("\n✅ Input monitoring stopped.");
         }
@@ -271,7 +289,7 @@ class Program
     /// Demonstrates digital output control with various switching patterns.
     /// Shows individual control, batch operations, and toggle functionality.
     /// </summary>
-    static void RunOutputControl()
+    static void RunOutputControl(TobotController controller)
     {
         Console.WriteLine("⚡ Digital Output Control Demo");
         Console.WriteLine("═══════════════════════════════════════");
@@ -279,7 +297,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             // Individual output control
             Console.WriteLine("▶ Testing individual outputs...");
@@ -332,7 +350,7 @@ class Program
     /// Reads and displays analog input voltages from the ADS1015 ADC.
     /// Demonstrates continuous sampling and voltage display.
     /// </summary>
-    static void RunAnalogReader()
+    static void RunAnalogReader(TobotController controller)
     {
         Console.WriteLine("📊 Analog Sensor Reader");
         Console.WriteLine("═══════════════════════════════════════");
@@ -340,7 +358,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             Console.WriteLine("Sampling 20 readings from all channels:\n");
             
@@ -372,7 +390,7 @@ class Program
     /// Demonstrates motor control with various movement patterns.
     /// Shows forward, backward, speed control, and synchronized movement.
     /// </summary>
-    static void RunMotorDemo()
+    static void RunMotorDemo(TobotController controller)
     {
         Console.WriteLine("🤖 Motor Control Demo");
         Console.WriteLine("═══════════════════════════════════════");
@@ -380,7 +398,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             // Motor 1 forward
             Console.WriteLine("▶ Motor 1: Forward (100%)");
@@ -430,7 +448,7 @@ class Program
     /// Demonstrates capacitive touch sensor reading and response.
     /// Shows individual sensor detection and LED feedback.
     /// </summary>
-    static void RunTouchDemo()
+    static void RunTouchDemo(TobotController controller)
     {
         Console.WriteLine("👆 Touch Sensor Demo");
         Console.WriteLine("═══════════════════════════════════════");
@@ -439,7 +457,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             DateTime startTime = DateTime.Now;
             
@@ -480,7 +498,7 @@ class Program
     /// Complete robot control system demonstration.
     /// Integrates inputs, motors, LEDs, and analog sensors for autonomous control.
     /// </summary>
-    static void RunRobotControl()
+    static void RunRobotControl(TobotController controller)
     {
         Console.WriteLine("🤖 Robot Control System");
         Console.WriteLine("═══════════════════════════════════════");
@@ -495,7 +513,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             while (true)
             {
@@ -583,7 +601,7 @@ class Program
     /// Performs a comprehensive system check of all Explorer HAT components.
     /// Tests connectivity and basic functionality of all subsystems.
     /// </summary>
-    static void RunSystemCheck()
+    static void RunSystemCheck(TobotController controller)
     {
         Console.WriteLine("🔧 Explorer HAT System Check");
         Console.WriteLine("═══════════════════════════════════════");
@@ -591,7 +609,7 @@ class Program
 
         try
         {
-            using var hat = new ExplorerHat();
+            var hat = controller.ExplorerHat;
 
             // Test LEDs
             Console.Write("Testing LEDs...          ");
@@ -643,7 +661,7 @@ class Program
     /// <summary>
     /// Streams HC-SR04 distance measurements to the console.
     /// </summary>
-    static void RunHcSr04Demo()
+    static void RunHcSr04Demo(TobotController controller)
     {
         Console.WriteLine("📐 HC-SR04 Distance Demo");
         Console.WriteLine("═══════════════════════════════════════");
@@ -655,12 +673,10 @@ class Program
 
         try
         {
-            using var sensor = new HcSr04Sensor();
-
             for (int i = 0; i < iterations; i++)
             {
                 string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                if (sensor.TryReadDistance(out double distanceCm, samplesPerReading))
+                if (controller.TryReadDistance(out double distanceCm, samplesPerReading))
                 {
                     Console.WriteLine($"[{timestamp}] Distance: {distanceCm:F1} cm");
                 }
@@ -684,7 +700,7 @@ class Program
     /// Demonstrates the Pan-Tilt HAT by sweeping pan and tilt angles.
     /// Requires a Pimoroni Pan-Tilt HAT connected via I2C (default address 0x15).
     /// </summary>
-    static void RunPanTiltDemo()
+    static void RunPanTiltDemo(TobotController controller)
     {
         Console.WriteLine("🎯 Pan-Tilt HAT Demo");
         Console.WriteLine("═══════════════════════════════════════");
@@ -692,8 +708,8 @@ class Program
 
         try
         {
-            // Create PanTiltHat with default settings (2 second idle timeout)
-            using var panTilt = new Tobot.Device.PanTiltHat.PanTiltHat();
+            // Use the shared Pan-Tilt HAT managed by the controller
+            var panTilt = controller.PanTiltHat;
 
             // Center position (0°, 0°)
             Console.WriteLine("▶ Centering servos...");
