@@ -159,64 +159,54 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             // Sequential LED activation
             Console.WriteLine("▶ Sequential lighting...");
-            hat.Light.One.On();
-            Console.WriteLine("  LED 1: ON");
-            Thread.Sleep(300);
-            
-            hat.Light.Two.On();
-            Console.WriteLine("  LED 2: ON");
-            Thread.Sleep(300);
-            
-            hat.Light.Three.On();
-            Console.WriteLine("  LED 3: ON");
-            Thread.Sleep(300);
-            
-            hat.Light.Four.On();
-            Console.WriteLine("  LED 4: ON");
-            Thread.Sleep(1000);
-            
+            for (int i = 1; i <= 4; i++)
+            {
+                controller.SetLedState(i, true);
+                Console.WriteLine($"  LED {i}: ON");
+                Thread.Sleep(300);
+            }
+            Thread.Sleep(700);
+			
             // All LEDs on
             Console.WriteLine("\n▶ All LEDs on...");
-            hat.Light.On();
+            controller.SetAllLeds(true);
             Thread.Sleep(1000);
-            
+			
             // All LEDs off
             Console.WriteLine("▶ All LEDs off...");
-            hat.Light.Off();
+            controller.SetAllLeds(false);
             Thread.Sleep(500);
-            
+			
             // Knight Rider style chase
             Console.WriteLine("\n▶ Knight Rider chase pattern...");
             for (int cycle = 0; cycle < 3; cycle++)
             {
                 for (int i = 1; i <= 4; i++)
                 {
-                    hat.Light[i].On();
+                    controller.SetLedState(i, true);
                     Thread.Sleep(100);
-                    hat.Light[i].Off();
+                    controller.SetLedState(i, false);
                 }
                 for (int i = 3; i >= 2; i--)
                 {
-                    hat.Light[i].On();
+                    controller.SetLedState(i, true);
                     Thread.Sleep(100);
-                    hat.Light[i].Off();
+                    controller.SetLedState(i, false);
                 }
             }
-            
+			
             // Blink all
             Console.WriteLine("\n▶ Synchronized blinking...");
             for (int i = 0; i < 5; i++)
             {
-                hat.Light.On();
+                controller.SetAllLeds(true);
                 Thread.Sleep(200);
-                hat.Light.Off();
+                controller.SetAllLeds(false);
                 Thread.Sleep(200);
             }
-            
+			
             Console.WriteLine("\n✅ LED demo complete!");
         }
         catch (Exception ex)
@@ -237,8 +227,6 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             void Input1Changed(object? _, PinValueChangedEventArgs e) =>
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Input 1: {e.ChangeType}");
             void Input2Changed(object? _, PinValueChangedEventArgs e) =>
@@ -248,16 +236,16 @@ class Program
             void Input4Changed(object? _, PinValueChangedEventArgs e) =>
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Input 4: {e.ChangeType}");
 
-            hat.Input.One.Changed += Input1Changed;
-            hat.Input.Two.Changed += Input2Changed;
-            hat.Input.Three.Changed += Input3Changed;
-            hat.Input.Four.Changed += Input4Changed;
+            controller.RegisterInputChangedHandler(1, Input1Changed);
+            controller.RegisterInputChangedHandler(2, Input2Changed);
+            controller.RegisterInputChangedHandler(3, Input3Changed);
+            controller.RegisterInputChangedHandler(4, Input4Changed);
 
             Console.WriteLine("📊 Initial States:");
-            Console.WriteLine($"  Input 1: {(hat.Input.One.Read() ? "HIGH" : "LOW")}");
-            Console.WriteLine($"  Input 2: {(hat.Input.Two.Read() ? "HIGH" : "LOW")}");
-            Console.WriteLine($"  Input 3: {(hat.Input.Three.Read() ? "HIGH" : "LOW")}");
-            Console.WriteLine($"  Input 4: {(hat.Input.Four.Read() ? "HIGH" : "LOW")}");
+            Console.WriteLine($"  Input 1: {(controller.ReadDigitalInput(1) ? "HIGH" : "LOW")}");
+            Console.WriteLine($"  Input 2: {(controller.ReadDigitalInput(2) ? "HIGH" : "LOW")}");
+            Console.WriteLine($"  Input 3: {(controller.ReadDigitalInput(3) ? "HIGH" : "LOW")}");
+            Console.WriteLine($"  Input 4: {(controller.ReadDigitalInput(4) ? "HIGH" : "LOW")}");
             Console.WriteLine("\n👂 Listening for changes...\n");
 
             // Keep monitoring (would normally use cancellation token)
@@ -267,12 +255,12 @@ class Program
             }
             finally
             {
-                hat.Input.One.Changed -= Input1Changed;
-                hat.Input.Two.Changed -= Input2Changed;
-                hat.Input.Three.Changed -= Input3Changed;
-                hat.Input.Four.Changed -= Input4Changed;
+                controller.UnregisterInputChangedHandler(1, Input1Changed);
+                controller.UnregisterInputChangedHandler(2, Input2Changed);
+                controller.UnregisterInputChangedHandler(3, Input3Changed);
+                controller.UnregisterInputChangedHandler(4, Input4Changed);
             }
-            
+			
             Console.WriteLine("\n✅ Input monitoring stopped.");
         }
         catch (Exception ex)
@@ -293,47 +281,45 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             // Individual output control
             Console.WriteLine("▶ Testing individual outputs...");
             for (int i = 1; i <= 4; i++)
             {
                 Console.WriteLine($"  Output {i}: ON");
-                hat.Output[i].On();
+                controller.SetDigitalOutput(i, true);
                 Thread.Sleep(500);
-                
+				
                 Console.WriteLine($"  Output {i}: OFF");
-                hat.Output[i].Off();
+                controller.SetDigitalOutput(i, false);
                 Thread.Sleep(300);
             }
-            
+			
             // All outputs on
             Console.WriteLine("\n▶ All outputs ON...");
-            hat.Output.On();
+            controller.SetAllDigitalOutputs(true);
             Thread.Sleep(1000);
-            
+			
             // All outputs off
             Console.WriteLine("▶ All outputs OFF...");
-            hat.Output.Off();
+            controller.SetAllDigitalOutputs(false);
             Thread.Sleep(500);
-            
+			
             // Toggle demonstration
             Console.WriteLine("\n▶ Toggle demonstration...");
             for (int i = 0; i < 6; i++)
             {
-                hat.Output.One.Toggle();
-                hat.Output.Three.Toggle();
+                controller.ToggleDigitalOutput(1);
+                controller.ToggleDigitalOutput(3);
                 Thread.Sleep(250);
-                
-                hat.Output.Two.Toggle();
-                hat.Output.Four.Toggle();
+				
+                controller.ToggleDigitalOutput(2);
+                controller.ToggleDigitalOutput(4);
                 Thread.Sleep(250);
             }
-            
+			
             // Cleanup
-            hat.Output.Off();
-            
+            controller.SetAllDigitalOutputs(false);
+			
             Console.WriteLine("\n✅ Output control demo complete!");
         }
         catch (Exception ex)
@@ -354,26 +340,24 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             Console.WriteLine("Sampling 20 readings from all channels:\n");
-            
+			
             for (int i = 0; i < 20; i++)
             {
-                double v1 = hat.Analog.One.Read();
-                double v2 = hat.Analog.Two.Read();
-                double v3 = hat.Analog.Three.Read();
-                double v4 = hat.Analog.Four.Read();
-                
+                double v1 = controller.ReadAnalogValue(1);
+                double v2 = controller.ReadAnalogValue(2);
+                double v3 = controller.ReadAnalogValue(3);
+                double v4 = controller.ReadAnalogValue(4);
+				
                 Console.Write($"\r[{i + 1:00}/20] ");
                 Console.Write($"A1: {v1:F3}V │ ");
                 Console.Write($"A2: {v2:F3}V │ ");
                 Console.Write($"A3: {v3:F3}V │ ");
                 Console.Write($"A4: {v4:F3}V");
-                
+				
                 Thread.Sleep(200);
             }
-            
+			
             Console.WriteLine("\n\n✅ Analog reading complete!");
         }
         catch (Exception ex)
@@ -394,44 +378,42 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             // Motor 1 forward
             Console.WriteLine("▶ Motor 1: Forward (100%)");
-            hat.Motor.One.Forward(100);
+            controller.DriveMotor(1, 100);
             Thread.Sleep(2000);
-            
+			
             Console.WriteLine("▶ Motor 1: Stop");
-            hat.Motor.One.Stop();
+            controller.StopMotor(1);
             Thread.Sleep(500);
-            
+			
             // Motor 1 backward
             Console.WriteLine("▶ Motor 1: Backward (50%)");
-            hat.Motor.One.Backward(50);
+            controller.DriveMotor(1, -50);
             Thread.Sleep(2000);
-            
+			
             Console.WriteLine("▶ Motor 1: Stop");
-            hat.Motor.One.Stop();
+            controller.StopMotor(1);
             Thread.Sleep(500);
-            
+			
             // Motor 2 speed control
             Console.WriteLine("\n▶ Motor 2: Variable speed");
             for (int speed = 0; speed <= 100; speed += 25)
             {
                 Console.WriteLine($"  Speed: {speed}%");
-                hat.Motor.Two.SetSpeed(speed);
+                controller.DriveMotor(2, speed);
                 Thread.Sleep(1000);
             }
-            
+            controller.StopMotor(2);
+			
             // Both motors synchronized
             Console.WriteLine("\n▶ Both motors: Forward (75%)");
-            hat.Motor.One.Forward(75);
-            hat.Motor.Two.Forward(75);
+            controller.DriveMotors(75, 75);
             Thread.Sleep(2000);
-            
+			
             Console.WriteLine("▶ Both motors: Stop");
-            hat.Motor.Stop();
-            
+            controller.StopMotors();
+			
             Console.WriteLine("\n✅ Motor demo complete!");
         }
         catch (Exception ex)
@@ -453,35 +435,30 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             DateTime startTime = DateTime.Now;
-            
+			
             while ((DateTime.Now - startTime).TotalSeconds < 15)
             {
-                // Read all touch sensors
-                byte touchState = hat.Touch.ReadAll();
-                
                 // Check individual sensors and light corresponding LEDs
                 for (int i = 1; i <= 4; i++)
                 {
-                    if (hat.Touch[i].IsTouched())
+                    if (controller.ReadTouchSensor(i))
                     {
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Touch sensor {i} detected!");
-                        hat.Light[i].On();
+                        controller.SetLedState(i, true);
                     }
                     else
                     {
-                        hat.Light[i].Off();
+                        controller.SetLedState(i, false);
                     }
                 }
-                
+				
                 Thread.Sleep(50);
             }
-            
+			
             // Cleanup
-            hat.Light.Off();
-            
+            controller.SetAllLeds(false);
+			
             Console.WriteLine("\n✅ Touch sensor demo complete!");
         }
         catch (Exception ex)
@@ -509,81 +486,77 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             while (true)
             {
                 // Read inputs
-                bool forward = hat.Input.One.Read();
-                bool backward = hat.Input.Two.Read();
-                bool left = hat.Input.Three.Read();
-                bool right = hat.Input.Four.Read();
-                
+                bool forward = controller.ReadDigitalInput(1);
+                bool backward = controller.ReadDigitalInput(2);
+                bool left = controller.ReadDigitalInput(3);
+                bool right = controller.ReadDigitalInput(4);
+			
                 // Check for obstacles
-                double obstacleDistance = hat.Analog.One.Read();
+                double obstacleDistance = controller.ReadAnalogValue(1);
                 bool obstacleDetected = obstacleDistance > 3.0;
-                
+			
                 if (obstacleDetected)
                 {
                     // Obstacle detected - stop and alert
-                    hat.Motor.Stop();
-                    hat.Light.One.Toggle();
-                    hat.Output.One.On();
+                    controller.StopMotors();
+                    controller.ToggleLed(1);
+                    controller.SetDigitalOutput(1, true);
                     Console.WriteLine("⚠️  OBSTACLE DETECTED! Stopping...");
                 }
                 else if (forward)
                 {
                     // Move forward
-                    hat.Motor.One.Forward(80);
-                    hat.Motor.Two.Forward(80);
-                    hat.Light.One.On();
-                    hat.Light.Two.On();
-                    hat.Light.Three.Off();
-                    hat.Light.Four.Off();
-                    hat.Output.One.Off();
+                    controller.DriveMotors(80, 80);
+                    controller.SetLedState(1, true);
+                    controller.SetLedState(2, true);
+                    controller.SetLedState(3, false);
+                    controller.SetLedState(4, false);
+                    controller.SetDigitalOutput(1, false);
                     Console.Write("\r▶ Moving FORWARD    ");
                 }
                 else if (backward)
                 {
                     // Move backward
-                    hat.Motor.One.Backward(80);
-                    hat.Motor.Two.Backward(80);
-                    hat.Light.One.Off();
-                    hat.Light.Two.Off();
-                    hat.Light.Three.On();
-                    hat.Light.Four.On();
-                    hat.Output.One.Off();
+                    controller.DriveMotors(-80, -80);
+                    controller.SetLedState(1, false);
+                    controller.SetLedState(2, false);
+                    controller.SetLedState(3, true);
+                    controller.SetLedState(4, true);
+                    controller.SetDigitalOutput(1, false);
                     Console.Write("\r◀ Moving BACKWARD   ");
                 }
                 else if (left)
                 {
                     // Turn left
-                    hat.Motor.One.Backward(60);
-                    hat.Motor.Two.Forward(60);
-                    hat.Light.One.On();
-                    hat.Light.Four.Off();
-                    hat.Output.One.Off();
+                    controller.DriveMotor(1, -60);
+                    controller.DriveMotor(2, 60);
+                    controller.SetLedState(1, true);
+                    controller.SetLedState(4, false);
+                    controller.SetDigitalOutput(1, false);
                     Console.Write("\r↺ Turning LEFT      ");
                 }
                 else if (right)
                 {
                     // Turn right
-                    hat.Motor.One.Forward(60);
-                    hat.Motor.Two.Backward(60);
-                    hat.Light.Two.On();
-                    hat.Light.Three.Off();
-                    hat.Output.One.Off();
+                    controller.DriveMotor(1, 60);
+                    controller.DriveMotor(2, -60);
+                    controller.SetLedState(2, true);
+                    controller.SetLedState(3, false);
+                    controller.SetDigitalOutput(1, false);
                     Console.Write("\r↻ Turning RIGHT     ");
                 }
                 else
                 {
                     // Stop
-                    hat.Motor.Stop();
-                    hat.Light.Off();
-                    hat.Output.Off();
+                    controller.StopMotors();
+                    controller.SetAllLeds(false);
+                    controller.SetAllDigitalOutputs(false);
                     Console.Write("\r■ STOPPED           ");
                 }
-                
+			
                 Thread.Sleep(50);
             }
         }
@@ -605,43 +578,44 @@ class Program
 
         try
         {
-            var hat = controller.ExplorerHat;
-
             // Test LEDs
             Console.Write("Testing LEDs...          ");
-            hat.Light.On();
+            controller.SetAllLeds(true);
             Thread.Sleep(500);
-            hat.Light.Off();
+            controller.SetAllLeds(false);
             Console.WriteLine("✅ OK");
 
             // Test Outputs
             Console.Write("Testing Outputs...       ");
-            hat.Output.On();
+            controller.SetAllDigitalOutputs(true);
             Thread.Sleep(500);
-            hat.Output.Off();
+            controller.SetAllDigitalOutputs(false);
             Console.WriteLine("✅ OK");
 
             // Test Inputs
             Console.Write("Testing Inputs...        ");
-            bool i1 = hat.Input.One.Read();
-            bool i2 = hat.Input.Two.Read();
+            bool i1 = controller.ReadDigitalInput(1);
+            bool i2 = controller.ReadDigitalInput(2);
+            _ = (i1, i2);
             Console.WriteLine("✅ OK");
 
             // Test Analog
             Console.Write("Testing Analog ADC...    ");
-            double v1 = hat.Analog.One.Read();
+            double v1 = controller.ReadAnalogValue(1);
+            _ = v1;
             Console.WriteLine("✅ OK");
 
             // Test Touch
             Console.Write("Testing Touch Sensors... ");
-            byte touch = hat.Touch.ReadAll();
+            byte touch = controller.ReadTouchState();
+            _ = touch;
             Console.WriteLine("✅ OK");
 
             // Test Motors
             Console.Write("Testing Motors...        ");
-            hat.Motor.One.Forward(50);
+            controller.DriveMotor(1, 50);
             Thread.Sleep(500);
-            hat.Motor.Stop();
+            controller.StopMotors();
             Console.WriteLine("✅ OK");
 
             Console.WriteLine("\n╔═══════════════════════════════════════╗");
@@ -704,29 +678,26 @@ class Program
 
         try
         {
-            // Use the shared Pan-Tilt HAT managed by the controller
-            var panTilt = controller.PanTiltHat;
-
             // Center position (0°, 0°)
             Console.WriteLine("▶ Centering servos...");
-            panTilt.Pan(0);
-            panTilt.Tilt(0);
+            controller.PanTilt(0, 0);
             Thread.Sleep(1000);
 
             // Sweep pan: -60° -> +60°
             Console.WriteLine("\n▶ Pan sweep: -60° to +60°");
             for (int a = -60; a <= 60; a += 15)
             {
-                panTilt.Pan(a);
-                Console.WriteLine($"  Pan: {a}° (current: {panTilt.CurrentPanAngle}°)");
+                controller.SetPanAngle(a);
+                var current = controller.GetPanTiltAngles().Pan;
+                Console.WriteLine($"  Pan: {a}° (current: {current}°)");
                 Thread.Sleep(250);
             }
-            
+		
             // Return to center
             Console.WriteLine("\n▶ Returning to center...");
             for (int a = 60; a >= 0; a -= 15)
             {
-                panTilt.Pan(a);
+                controller.SetPanAngle(a);
                 Thread.Sleep(200);
             }
 
@@ -734,44 +705,43 @@ class Program
             Console.WriteLine("\n▶ Tilt sweep: -30° to +30°");
             for (int a = -30; a <= 30; a += 10)
             {
-                panTilt.Tilt(a);
-                Console.WriteLine($"  Tilt: {a}° (current: {panTilt.CurrentTiltAngle}°)");
+                controller.SetTiltAngle(a);
+                var current = controller.GetPanTiltAngles().Tilt;
+                Console.WriteLine($"  Tilt: {a}° (current: {current}°)");
                 Thread.Sleep(300);
             }
-            
+		
             // Return to center
             Console.WriteLine("\n▶ Returning to center...");
             for (int a = 30; a >= 0; a -= 10)
             {
-                panTilt.Tilt(a);
+                controller.SetTiltAngle(a);
                 Thread.Sleep(200);
             }
 
             // Combined movement demonstration
             Console.WriteLine("\n▶ Combined movement pattern");
-            panTilt.Pan(-45);
-            panTilt.Tilt(20);
+            controller.SetPanAngle(-45);
+            controller.SetTiltAngle(20);
             Console.WriteLine("  Position: (-45°, 20°)");
             Thread.Sleep(600);
-            
-            panTilt.Pan(45);
-            panTilt.Tilt(-20);
+		
+            controller.SetPanAngle(45);
+            controller.SetTiltAngle(-20);
             Console.WriteLine("  Position: (45°, -20°)");
             Thread.Sleep(600);
-            
-            panTilt.Pan(0);
-            panTilt.Tilt(0);
+		
+            controller.PanTilt(0, 0);
             Console.WriteLine("  Position: (0°, 0°) - Centered");
             Thread.Sleep(500);
 
             // Read back current positions
             Console.WriteLine("\n▶ Reading positions from device...");
-            var currentPan = panTilt.GetPan();
-            var currentTilt = panTilt.GetTilt();
+            var (currentPan, currentTilt) = controller.GetPanTiltAngles();
             Console.WriteLine($"  Reported Pan: {currentPan}°");
             Console.WriteLine($"  Reported Tilt: {currentTilt}°");
 
-            Console.WriteLine($"\n▶ Idle timeout: {panTilt.IdleTimeout} seconds");
+            Console.WriteLine($"\n▶ Idle timeout: {controller.GetPanTiltIdleTimeout()} seconds");
             Console.WriteLine("  (Servos will auto-disable after inactivity)\n");
 
             Console.WriteLine("✅ Pan-Tilt demo complete!");

@@ -11,7 +11,7 @@
 
 ## ? What is Tobot?
 
-**Tobot** is a complete .NET robotics platform that brings the power of modern C# to the Raspberry Pi and the beloved Pimoroni Explorer HAT. Whether you're building your first robot, teaching programming, or creating a sophisticated autonomous system, Tobot provides everything you need in a clean, intuitive API.
+**Tobot** is a complete .NET robotics platform that brings the power of modern C# to the Raspberry Pi and the beloved Pimoroni Explorer HAT. At the heart of the solution is the `TobotController`, a single high-level entry point that orchestrates every hat, sensor, and peripheral so your apps never need to juggle individual drivers. Whether you're building your first robot, teaching programming, or creating a sophisticated autonomous system, Tobot provides everything you need in a clean, intuitive API.
 
 ### ✨ Why Tobot?
 
@@ -19,6 +19,7 @@
 - **📦 Package-Based Architecture** - Logical organization by functionality
 - **📚 Comprehensive Documentation** - XML docs on every member, extensive guides
 - **🎯 Ready-to-Run Demos** - Interactive examples for every feature
+- **🔌 Unified Controller** - One `TobotController` surfaces every LED, motor, sensor, and servo
 - **✅ Production Ready** - Robust error handling and resource management
 - **🎓 Educational** - Perfect for learning robotics and C# together
 
@@ -27,31 +28,30 @@
 ## ⚡ Quick Demo
 
 ```csharp
-using Tobot.Device.ExplorerHat;
+using Tobot.Device;
 
-// Initialize the Explorer HAT
-using var hat = new ExplorerHat();
+// Initialize the unified controller (all hats + sensors)
+using var controller = new TobotController();
 
 // Light show!
-hat.Light.On();
+controller.SetAllLeds(true);
 
 // Drive forward
-hat.Motor.One.Forward(100);
-hat.Motor.Two.Forward(100);
+controller.DriveMotors(100, 100);
 
 // React to sensors
-if (hat.Input.One.Read())
+if (controller.ReadDigitalInput(1))
 {
-    hat.Motor.Stop();
-    hat.Light.Off();
+    controller.StopMotors();
+    controller.SetAllLeds(false);
 }
 
 // Read analog sensors
-double voltage = hat.Analog.One.Read();
+double voltage = controller.ReadAnalogValue(1);
 Console.WriteLine($"Sensor: {voltage:F2}V");
 
 // Touch detection
-if (hat.Touch[1].IsTouched())
+if (controller.ReadTouchSensor(1))
 {
     Console.WriteLine("Button pressed!");
 }
@@ -72,38 +72,64 @@ A professional-grade driver library for the Explorer HAT with:
 | **📊 Analog** | `AnalogInput`, `AnalogInputCollection` | 0-5V analog input via ADS1015 ADC |
 | **🔌 Digital** | `DigitalInput/Output`, Collections | Digital I/O with event support |
 | **👆 Touch** | `TouchSensor`, `TouchCollection` | Capacitive touch via CAP1208 |
+| **📐 Distance** | `HcSr04Sensor` | Ultrasonic range finding with averaging |
 
-#### 🧭 Pan-Tilt HAT (Experimental)
+#### 🧭 Pan-Tilt HAT
 
-Support for the Pimoroni Pan-Tilt HAT via its onboard microcontroller at I2C address `0x15` (same protocol as the official Python library).
+Support for the Pimoroni Pan-Tilt HAT is baked into `TobotController`, which proxies every motion command to the onboard microcontroller at I2C address `0x15` (same protocol as the official Python library).
 
-- Namespace: `Tobot.Device.PanTiltHat`
-- Type: `PanTiltHat`
-- Features: set pan/tilt angles, idle timeout auto-disable, read-back positions
+- Access via `TobotController.SetPanAngle`, `SetTiltAngle`, `PanTilt`, and `GetPanTiltAngles`
+- Configurable idle timeout (query with `GetPanTiltIdleTimeout`)
+- Automatic servo enable/disable and retry handling
 
 Example:
 
 ```csharp
-using Tobot.Device.PanTiltHat;
+using Tobot.Device;
 
-using var panTilt = new PanTiltHat();
+using var controller = new TobotController();
 
 // Center
-panTilt.Pan(0);
-panTilt.Tilt(0);
+controller.PanTilt(0, 0);
 
 // Move
-panTilt.Pan(30);
-panTilt.Tilt(-10);
+controller.SetPanAngle(30);
+controller.SetTiltAngle(-10);
 
 // Read back (optional)
-Console.WriteLine($"Pan: {panTilt.GetPan()}°, Tilt: {panTilt.GetTilt()}°");
+var (pan, tilt) = controller.GetPanTiltAngles();
+Console.WriteLine($"Pan: {pan}°, Tilt: {tilt}°");
 ```
 
 Notes:
 - Requires I2C enabled on the Pi (`raspi-config`) and device visible at `0x15` (`i2cdetect -y 1`).
 - Servos need an adequate 5V supply connected to the HAT; the Pi’s USB power is not sufficient to drive servos.
 - Default servo pulse range is 575–2325 µs (≈ -90°…+90°). Idle timeout defaults to 2s.
+
+#### 📐 HC-SR04 Ultrasonic Distance
+
+`TobotController` also wraps the HC-SR04 ultrasonic range finder via the `HcSr04Sensor` manager.
+
+- Call `TryReadDistance` for non-throwing reads or `ReadDistance` to enforce a measurement
+- Adjustable sample count for noise reduction (defaults to 5 readings)
+- Shares the controller's GPIO instance so trigger/echo pins are automatically managed
+
+Example:
+
+```csharp
+using Tobot.Device;
+
+using var controller = new TobotController();
+
+if (controller.TryReadDistance(out double distanceCm))
+{
+    Console.WriteLine($"Distance: {distanceCm:F1} cm");
+}
+else
+{
+    Console.WriteLine("Out of range or no echo detected.");
+}
+```
 
 ### 🎮 Tobot Console Application
 
@@ -139,7 +165,9 @@ Access the web interface at `http://[raspberry-pi-ip]:5247/simple`
 
 - Raspberry Pi (any model with 40-pin GPIO)
 - Pimoroni Explorer HAT
-- .NET 9 SDK
+- Pimoroni PanTilt HAT
+- HC-SR04 ultrasonic sensor
+- .NET 10 SDK
 
 ### Installation
 
@@ -198,24 +226,26 @@ Tobot follows a clean, modular architecture:
 
 ```
 Tobot/
-??? ?? Tobot/                          Console demo application
-?   ??? Program.cs                     Interactive demos
-?   ??? README.md                      Usage guide
-?   ??? QUICKSTART.md                  5-minute setup
-?
-??? ?? Tobot.Device/                   Hardware driver library
-    ??? ExplorerHat/                   Explorer HAT components
-        ??? ExplorerHat.cs             Main controller
-        ??? Motor/                     Motor control package
-        ??? Led/                       LED control package
-        ??? Analog/                    Analog input package
-        ??? Digital/                   Digital I/O package
-        ??? Touch/                     Touch sensor package
-    ??? PanTiltHat/                    Pan-Tilt HAT (MCU @ 0x15)
-        ??? PanTiltHat.cs              High-level pan/tilt API (MCU protocol)
-        ??? Pca9685.cs                 (Optional) PCA9685 helper (not required for MCU mode)
+├── Tobot/                             Console demo application
+│   ├── Program.cs                     Interactive demos
+│   ├── README.md                      Usage guide
+│   └── QUICKSTART.md                  5-minute setup
 │
-└── 🌐 Tobot.Web/                      Web control interface
+├── Tobot.Device/                      Hardware driver library
+│   ├── ExplorerHat/                   Explorer HAT components
+│   │   ├── ExplorerHat.cs             Main controller
+│   │   ├── Motor/                     Motor control package
+│   │   ├── Led/                       LED control package
+│   │   ├── Analog/                    Analog input package
+│   │   ├── Digital/                   Digital I/O package
+│   │   └── Touch/                     Touch sensor package
+│   ├── HcSr04/                        Ultrasonic distance helpers
+│   │   └── HcSr04.cs                  High-level HC-SR04 manager
+│   └── PanTiltHat/                    Pan-Tilt HAT (MCU @ 0x15)
+│       ├── PanTiltHat.cs              High-level pan/tilt API (MCU protocol)
+│       └── Pca9685.cs                 (Optional) PCA9685 helper (not required for MCU mode)
+│
+└── Tobot.Web/                      Web control interface
     ├── Program.cs                     ASP.NET Core application
     ├── Hubs/                          SignalR hubs
     │   ├── TobotHub.cs                Main control hub
@@ -237,49 +267,64 @@ Tobot/
 
 ## 🎯 Features & Capabilities
 
+All snippets below assume you have already created `var controller = new TobotController();` (or are inside a scope where a controller instance is available).
+
 ### 🚗 Motor Control
 ```csharp
-hat.Motor.One.Forward(100);      // Full speed ahead
-hat.Motor.One.SetSpeed(75);      // 75% forward
-hat.Motor.One.SetSpeed(-50);     // 50% backward
-hat.Motor.Stop();                // Emergency stop
+controller.DriveMotor(1, 100);   // Full speed ahead
+controller.DriveMotor(1, 75);    // 75% forward
+controller.DriveMotor(1, -50);   // 50% backward
+controller.StopMotors();         // Emergency stop
 ```
 
 ### 💡 LED Control
 ```csharp
-hat.Light.One.On();              // Individual LED
-hat.Light.On();                  // All LEDs
-hat.Light.Two.Toggle();          // Toggle state
+controller.SetLedState(1, true); // Individual LED
+controller.SetAllLeds(true);     // All LEDs
+controller.ToggleLed(2);         // Toggle state
 ```
 
 ### 🔌 Digital I/O
 ```csharp
 // Read input
-bool state = hat.Input.One.Read();
+bool state = controller.ReadDigitalInput(1);
 
 // Event-driven
-hat.Input.One.Changed += (s, e) => 
-    Console.WriteLine($"Changed: {e.ChangeType}");
+controller.RegisterInputChangedHandler(1, (s, e) =>
+	Console.WriteLine($"Changed: {e.ChangeType}")
+);
 
 // Control output
-hat.Output.One.On();
-hat.Output.Toggle();
+controller.SetDigitalOutput(1, true);
+controller.ToggleDigitalOutput(1);
 ```
 
 ### 📊 Analog Input (0-5V)
 ```csharp
-double voltage = hat.Analog.One.Read();
+double voltage = controller.ReadAnalogValue(1);
 Console.WriteLine($"Voltage: {voltage:F2}V");
 ```
 
 ### 👆 Capacitive Touch
 ```csharp
-if (hat.Touch[1].IsTouched())
+if (controller.ReadTouchSensor(1))
 {
-    Console.WriteLine("Touched!");
+	Console.WriteLine("Touched!");
 }
 
-byte allSensors = hat.Touch.ReadAll();
+byte allSensors = controller.ReadTouchState();
+```
+
+### 📐 Ultrasonic Distance (HC-SR04)
+```csharp
+if (controller.TryReadDistance(out double distanceCm, samples: 5))
+{
+    Console.WriteLine($"Distance: {distanceCm:F1} cm");
+}
+else
+{
+    Console.WriteLine("Measurement failed");
+}
 ```
 
 ---
@@ -303,29 +348,29 @@ byte allSensors = hat.Touch.ReadAll();
 1. **Line Following Robot**
    ```csharp
    // Use analog sensors to detect line
-   double left = hat.Analog.One.Read();
-   double right = hat.Analog.Two.Read();
+   double left = controller.ReadAnalogValue(1);
+   double right = controller.ReadAnalogValue(2);
    
-   if (left > 2.5) hat.Motor.One.Forward(50);
-   if (right > 2.5) hat.Motor.Two.Forward(50);
+   if (left > 2.5) controller.DriveMotor(1, 50);
+   if (right > 2.5) controller.DriveMotor(2, 50);
    ```
 
 2. **Touch-Controlled Light Show**
    ```csharp
    for (int i = 1; i <= 4; i++)
    {
-       if (hat.Touch[i].IsTouched())
-           hat.Light[i].Toggle();
+       if (controller.ReadTouchSensor(i))
+           controller.ToggleLed(i);
    }
    ```
 
 3. **Obstacle Avoiding Robot**
    ```csharp
-   double distance = hat.Analog.One.Read();
+   double distance = controller.ReadAnalogValue(1);
    if (distance > 3.0)
    {
-       hat.Motor.Stop();
-       hat.Light.On(); // Warning!
+       controller.StopMotors();
+       controller.SetAllLeds(true); // Warning!
    }
    ```
 
@@ -388,41 +433,40 @@ All demos in `Tobot/Program.cs` are fully commented and ready to modify. Each ex
 ### Custom Robot Control Loop
 
 ```csharp
-using var hat = new ExplorerHat();
+using var controller = new TobotController();
 
 // Setup
-hat.Light.Off();
-hat.Motor.Stop();
+controller.SetAllLeds(false);
+controller.StopMotors();
 
 // Main control loop
 while (true)
 {
     // Read sensors
-    bool goButton = hat.Input.One.Read();
-    bool stopButton = hat.Input.Two.Read();
-    double frontSensor = hat.Analog.One.Read();
-    
+    bool goButton = controller.ReadDigitalInput(1);
+    bool stopButton = controller.ReadDigitalInput(2);
+    double frontSensor = controller.ReadAnalogValue(1);
+	
     // Decision logic
     if (stopButton || frontSensor > 3.0)
     {
         // Emergency stop
-        hat.Motor.Stop();
-        hat.Light.One.On();
+        controller.StopMotors();
+        controller.SetLedState(1, true);
     }
     else if (goButton)
     {
         // Move forward
-        hat.Motor.One.Forward(80);
-        hat.Motor.Two.Forward(80);
-        hat.Light.Two.On();
+        controller.DriveMotors(80, 80);
+        controller.SetLedState(2, true);
     }
     else
     {
         // Idle
-        hat.Motor.Stop();
-        hat.Light.Off();
+        controller.StopMotors();
+        controller.SetAllLeds(false);
     }
-    
+	
     await Task.Delay(50); // 20Hz update rate
 }
 ```
@@ -432,13 +476,13 @@ while (true)
 ```csharp
 public async Task MonitorSensorsAsync(CancellationToken ct)
 {
-    using var hat = new ExplorerHat();
-    
+    using var controller = new TobotController();
+	
     while (!ct.IsCancellationRequested)
     {
-        var voltage = hat.Analog.One.Read();
+        var voltage = controller.ReadAnalogValue(1);
         Console.WriteLine($"Sensor: {voltage:F2}V");
-        
+		
         await Task.Delay(100, ct);
     }
 }

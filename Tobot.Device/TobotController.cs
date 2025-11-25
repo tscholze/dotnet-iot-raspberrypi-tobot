@@ -1,3 +1,4 @@
+using System;
 using System.Device.Gpio;
 using Tobot.Device.ExplorerHat.Motor;
 using Tobot.Device.HcSr04;
@@ -52,7 +53,7 @@ public sealed class TobotController : IDisposable
 	/// <summary>
 	/// Gets the Explorer HAT abstraction, creating it on first use.
 	/// </summary>
-	public ExplorerHatDevice ExplorerHat
+	private ExplorerHatDevice ExplorerHat
 	{
 		get
 		{
@@ -64,7 +65,7 @@ public sealed class TobotController : IDisposable
 	/// <summary>
 	/// Gets the Pan-Tilt HAT abstraction, creating it on first use.
 	/// </summary>
-	public PanTiltHatDevice PanTiltHat
+	private PanTiltHatDevice PanTiltHat
 	{
 		get
 		{
@@ -76,7 +77,7 @@ public sealed class TobotController : IDisposable
 	/// <summary>
 	/// Gets the HC-SR04 distance sensor abstraction, creating it on first use.
 	/// </summary>
-	public HcSr04Sensor UltrasonicSensor
+	private HcSr04Sensor UltrasonicSensor
 	{
 		get
 		{
@@ -122,6 +123,17 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Toggles the specified LED.
+	/// </summary>
+	/// <param name="ledIndex">LED index (1-4).</param>
+	public void ToggleLed(int ledIndex)
+	{
+		EnsureNotDisposed();
+		ValidateChannel(ledIndex);
+		ExplorerHat.Light[ledIndex].Toggle();
+	}
+
+	/// <summary>
 	/// Drives a digital output line on the Explorer HAT.
 	/// </summary>
 	/// <param name="outputIndex">Output index (1-4).</param>
@@ -141,6 +153,72 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Sets all digital outputs to a single state.
+	/// </summary>
+	/// <param name="isOn">Flag indicating whether every output should be high.</param>
+	public void SetAllDigitalOutputs(bool isOn)
+	{
+		EnsureNotDisposed();
+		if (isOn)
+		{
+			ExplorerHat.Output.On();
+		}
+		else
+		{
+			ExplorerHat.Output.Off();
+		}
+	}
+
+	/// <summary>
+	/// Toggles the specified digital output.
+	/// </summary>
+	/// <param name="outputIndex">Output index (1-4).</param>
+	public void ToggleDigitalOutput(int outputIndex)
+	{
+		EnsureNotDisposed();
+		ValidateChannel(outputIndex);
+		ExplorerHat.Output[outputIndex].Toggle();
+	}
+
+	/// <summary>
+	/// Reads a single digital input.
+	/// </summary>
+	/// <param name="inputIndex">Input index (1-4).</param>
+	/// <returns><c>true</c> when the input is high; otherwise <c>false</c>.</returns>
+	public bool ReadDigitalInput(int inputIndex)
+	{
+		EnsureNotDisposed();
+		ValidateChannel(inputIndex);
+		return ExplorerHat.Input[inputIndex].Read();
+	}
+
+	/// <summary>
+	/// Registers a callback for changes on a digital input.
+	/// </summary>
+	/// <param name="inputIndex">Input index (1-4).</param>
+	/// <param name="handler">Handler to invoke on pin changes.</param>
+	public void RegisterInputChangedHandler(int inputIndex, PinChangeEventHandler handler)
+	{
+		EnsureNotDisposed();
+		ArgumentNullException.ThrowIfNull(handler);
+		ValidateChannel(inputIndex);
+		ExplorerHat.Input[inputIndex].Changed += handler;
+	}
+
+	/// <summary>
+	/// Unregisters a previously attached input change handler.
+	/// </summary>
+	/// <param name="inputIndex">Input index (1-4).</param>
+	/// <param name="handler">Handler to remove.</param>
+	public void UnregisterInputChangedHandler(int inputIndex, PinChangeEventHandler handler)
+	{
+		EnsureNotDisposed();
+		ArgumentNullException.ThrowIfNull(handler);
+		ValidateChannel(inputIndex);
+		ExplorerHat.Input[inputIndex].Changed -= handler;
+	}
+
+	/// <summary>
 	/// Reads the current state of all Explorer HAT digital inputs.
 	/// </summary>
 	/// <returns>Array of four booleans representing inputs 1-4.</returns>
@@ -149,10 +227,10 @@ public sealed class TobotController : IDisposable
 		EnsureNotDisposed();
 		return new[]
 		{
-			ExplorerHat.Input.One.Read(),
-			ExplorerHat.Input.Two.Read(),
-			ExplorerHat.Input.Three.Read(),
-			ExplorerHat.Input.Four.Read()
+			ReadDigitalInput(1),
+			ReadDigitalInput(2),
+			ReadDigitalInput(3),
+			ReadDigitalInput(4)
 		};
 	}
 
@@ -165,11 +243,45 @@ public sealed class TobotController : IDisposable
 		EnsureNotDisposed();
 		return new[]
 		{
-			ExplorerHat.Analog.One.Read(),
-			ExplorerHat.Analog.Two.Read(),
-			ExplorerHat.Analog.Three.Read(),
-			ExplorerHat.Analog.Four.Read()
+			ReadAnalogValue(1),
+			ReadAnalogValue(2),
+			ReadAnalogValue(3),
+			ReadAnalogValue(4)
 		};
+	}
+
+	/// <summary>
+	/// Reads a single analog channel.
+	/// </summary>
+	/// <param name="channel">Analog channel (1-4).</param>
+	/// <returns>Voltage reading.</returns>
+	public double ReadAnalogValue(int channel)
+	{
+		EnsureNotDisposed();
+		ValidateChannel(channel);
+		return ExplorerHat.Analog[channel].Read();
+	}
+
+	/// <summary>
+	/// Reads the specified touch sensor.
+	/// </summary>
+	/// <param name="sensorIndex">Sensor index (1-4).</param>
+	/// <returns><c>true</c> when touched; otherwise <c>false</c>.</returns>
+	public bool ReadTouchSensor(int sensorIndex)
+	{
+		EnsureNotDisposed();
+		ValidateChannel(sensorIndex);
+		return ExplorerHat.Touch[sensorIndex].IsTouched();
+	}
+
+	/// <summary>
+	/// Reads the raw touch state bitmap.
+	/// </summary>
+	/// <returns>Bitmask representing active touch sensors.</returns>
+	public byte ReadTouchState()
+	{
+		EnsureNotDisposed();
+		return ExplorerHat.Touch.ReadAll();
 	}
 
 	/// <summary>
@@ -180,8 +292,20 @@ public sealed class TobotController : IDisposable
 	public void DriveMotors(int motorOnePercent, int motorTwoPercent)
 	{
 		EnsureNotDisposed();
-		ApplyMotorSpeed(ExplorerHat.Motor.One, motorOnePercent);
-		ApplyMotorSpeed(ExplorerHat.Motor.Two, motorTwoPercent);
+		DriveMotor(1, motorOnePercent);
+		DriveMotor(2, motorTwoPercent);
+	}
+
+	/// <summary>
+	/// Drives a single motor using a percentage-based speed command.
+	/// </summary>
+	/// <param name="motorIndex">Motor index (1 or 2).</param>
+	/// <param name="speedPercent">Speed between -100 and 100.</param>
+	public void DriveMotor(int motorIndex, double speedPercent)
+	{
+		EnsureNotDisposed();
+		var motor = GetMotor(motorIndex);
+		ApplyMotorSpeed(motor, (int)Math.Round(speedPercent));
 	}
 
 	/// <summary>
@@ -191,6 +315,16 @@ public sealed class TobotController : IDisposable
 	{
 		EnsureNotDisposed();
 		ExplorerHat.Motor.Stop();
+	}
+
+	/// <summary>
+	/// Stops a single Explorer HAT motor.
+	/// </summary>
+	/// <param name="motorIndex">Motor index (1 or 2).</param>
+	public void StopMotor(int motorIndex)
+	{
+		EnsureNotDisposed();
+		GetMotor(motorIndex).Stop();
 	}
 
 	/// <summary>
@@ -213,6 +347,36 @@ public sealed class TobotController : IDisposable
 	{
 		EnsureNotDisposed();
 		return (PanTiltHat.GetPan(), PanTiltHat.GetTilt());
+	}
+
+	/// <summary>
+	/// Sets only the pan axis to the desired angle.
+	/// </summary>
+	/// <param name="panDegrees">Pan angle in degrees.</param>
+	public void SetPanAngle(double panDegrees)
+	{
+		EnsureNotDisposed();
+		PanTiltHat.Pan((int)Math.Round(panDegrees));
+	}
+
+	/// <summary>
+	/// Sets only the tilt axis to the desired angle.
+	/// </summary>
+	/// <param name="tiltDegrees">Tilt angle in degrees.</param>
+	public void SetTiltAngle(double tiltDegrees)
+	{
+		EnsureNotDisposed();
+		PanTiltHat.Tilt((int)Math.Round(tiltDegrees));
+	}
+
+	/// <summary>
+	/// Gets the current Pan-Tilt HAT idle timeout value.
+	/// </summary>
+	/// <returns>Timeout in seconds.</returns>
+	public double GetPanTiltIdleTimeout()
+	{
+		EnsureNotDisposed();
+		return PanTiltHat.IdleTimeout;
 	}
 
 	/// <summary>
@@ -283,6 +447,17 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Gets a single Explorer HAT motor by index.
+	/// </summary>
+	/// <param name="motorIndex">Motor index (1 or 2).</param>
+	/// <returns>Requested motor instance.</returns>
+	private Motor GetMotor(int motorIndex)
+	{
+		ValidateMotorIndex(motorIndex);
+		return motorIndex == 1 ? ExplorerHat.Motor.One : ExplorerHat.Motor.Two;
+	}
+
+	/// <summary>
 	/// Ensures the controller has not been disposed before servicing requests.
 	/// </summary>
 	private void EnsureNotDisposed()
@@ -302,6 +477,18 @@ public sealed class TobotController : IDisposable
 		if (channel is < 1 or > 4)
 		{
 			throw new ArgumentOutOfRangeException(nameof(channel), "Explorer HAT exposes four channels (1-4).");
+		}
+	}
+
+	/// <summary>
+	/// Validates that a motor index is within the supported range.
+	/// </summary>
+	/// <param name="motorIndex">Motor index to validate.</param>
+	private static void ValidateMotorIndex(int motorIndex)
+	{
+		if (motorIndex is < 1 or > 2)
+		{
+			throw new ArgumentOutOfRangeException(nameof(motorIndex), "Explorer HAT exposes two motors (1-2).");
 		}
 	}
 }
