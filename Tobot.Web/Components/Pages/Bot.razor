@@ -4,10 +4,11 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Tobot.Web.Hubs
 @inject NavigationManager Navigation
+@inject Tobot.Device.TobotController Controller
 
 <PageTitle>Tobot Bot</PageTitle>
 
-<div class="eyes-container @GetMoodClass()">
+<div class="eyes-container @GetMoodClass()" @onclick="HandleClick">
     <div class="distance-indicator">@_distanceText</div>
     <div class="eye-wrapper left-eye">
         <div class="eye">
@@ -49,6 +50,7 @@
         position: fixed;
         top: 0;
         left: 0;
+        cursor: pointer;
     }
 
     .distance-indicator {
@@ -650,6 +652,11 @@
     private CancellationTokenSource? _neutralCts;
 
     /// <summary>
+    /// Task representing the running random drive operation.
+    /// </summary>
+    private Task? _randomDriveTask;
+
+    /// <summary>
     /// Returns the CSS class corresponding to the current mood.
     /// </summary>
     private string GetMoodClass()
@@ -716,6 +723,13 @@
         try
         {
             await _hubConnection.StartAsync();
+            
+            // Start autonomous driving
+            _randomDriveTask = Controller.StartRandomDrive(
+                forwardSpeed: 50,
+                turnSpeed: 40,
+                obstacleDistanceCm: 20.0,
+                clearDistanceCm: 30.0);
         }
         catch
         {
@@ -742,12 +756,34 @@
     }
 
     /// <summary>
+    /// Handles click events on the page to stop autonomous driving.
+    /// </summary>
+    private void HandleClick()
+    {
+        Controller.StopRandomDrive();
+    }
+
+    /// <summary>
     /// Disposes of resources including the cancellation token source and SignalR hub connection.
     /// </summary>
     public async ValueTask DisposeAsync()
     {
         _neutralCts?.Cancel();
         _neutralCts?.Dispose();
+        
+        Controller.StopRandomDrive();
+        
+        if (_randomDriveTask is not null)
+        {
+            try
+            {
+                await _randomDriveTask.ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore cancellation exceptions
+            }
+        }
         
         if (_hubConnection is not null)
         {

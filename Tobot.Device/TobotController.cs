@@ -56,6 +56,16 @@ public sealed class TobotController : IDisposable
 	private bool _disposed;
 
 	/// <summary>
+	/// Cancellation token source for the random drive loop.
+	/// </summary>
+	private CancellationTokenSource? _randomDriveCts;
+
+	/// <summary>
+	/// Random number generator for turn direction selection.
+	/// </summary>
+	private static readonly Random _random = new();
+
+	/// <summary>
 	/// Gets the shared <see cref="GpioController"/> used across all peripherals.
 	/// </summary>
 	public GpioController GpioController
@@ -445,6 +455,140 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Starts autonomous driving mode where the robot drives forward until an obstacle is detected,
+	/// then turns randomly left or right until clear, and continues forward.
+	/// </summary>
+	/// <param name="forwardSpeed">Speed for forward movement (0-100, default 50).</param>
+	/// <param name="turnSpeed">Speed for turning (0-100, default 40).</param>
+	/// <param name="obstacleDistanceCm">Distance threshold to trigger obstacle avoidance (default 20cm).</param>
+	/// <param name="clearDistanceCm">Distance threshold to resume forward movement (default 30cm).</param>
+	/// <returns>Task that completes when autonomous driving is stopped via <see cref="StopRandomDrive"/>.</returns>
+	public Task StartRandomDrive(
+		int forwardSpeed = 50,
+		int turnSpeed = 40,
+		double obstacleDistanceCm = 20.0,
+		double clearDistanceCm = 30.0)
+	{
+		EnsureNotDisposed();
+
+		if (forwardSpeed is < 0 or > 100)
+		{
+			throw new ArgumentOutOfRangeException(nameof(forwardSpeed), "Forward speed must be between 0 and 100.");
+		}
+
+		if (turnSpeed is < 0 or > 100)
+		{
+			throw new ArgumentOutOfRangeException(nameof(turnSpeed), "Turn speed must be between 0 and 100.");
+		}
+
+		if (obstacleDistanceCm <= 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(obstacleDistanceCm), "Obstacle distance must be greater than zero.");
+		}
+
+		if (clearDistanceCm <= obstacleDistanceCm)
+		{
+			throw new ArgumentOutOfRangeException(nameof(clearDistanceCm), "Clear distance must be greater than obstacle distance.");
+		}
+
+		// Stop any existing random drive
+		StopRandomDrive();
+
+		_randomDriveCts = new CancellationTokenSource();
+		return RunRandomDriveLoopAsync(forwardSpeed, turnSpeed, obstacleDistanceCm, clearDistanceCm, _randomDriveCts.Token);
+	}
+
+	/// <summary>
+	/// Stops the autonomous driving mode and halts all motors.
+	/// </summary>
+	public void StopRandomDrive()
+	{
+		_randomDriveCts?.Cancel();
+		_randomDriveCts?.Dispose();
+		_randomDriveCts = null;
+		StopMotors();
+	}
+
+	/// <summary>
+	/// Stops all robot actuators including motors, LEDs, and digital outputs.
+	/// Useful for emergency stop or cleanup operations.
+	/// </summary>
+	public void Stop()
+	{
+		EnsureNotDisposed();
+		StopRandomDrive();
+		StopMotors();
+		SetAllLeds(false);
+		SetAllDigitalOutputs(false);
+	}
+
+	/// <summary>
+	/// Executes the autonomous driving loop.
+	/// </summary>
+	private async Task RunRandomDriveLoopAsync(
+		int forwardSpeed,
+		int turnSpeed,
+		double obstacleDistanceCm,
+		double clearDistanceCm,
+		CancellationToken cancellationToken)
+	{
+		try
+		{
+			while (!cancellationToken.IsCancellationRequested)
+			{
+				// Drive forward until obstacle detected
+				DriveMotors(forwardSpeed, forwardSpeed);
+
+				while (!cancellationToken.IsCancellationRequested)
+				{
+					await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+
+					if (TryReadDistance(out double distance) && distance < obstacleDistanceCm)
+					{
+						break;
+					}
+				}
+
+				if (cancellationToken.IsCancellationRequested)
+				{
+					break;
+				}
+
+				// Obstacle detected - choose random turn direction
+				bool turnLeft = _random.Next(2) == 0;
+
+				// Turn until clear
+				if (turnLeft)
+				{
+					DriveMotors(-turnSpeed, turnSpeed); // Left motor backward, right forward
+				}
+				else
+				{
+					DriveMotors(turnSpeed, -turnSpeed); // Left motor forward, right backward
+				}
+
+				while (!cancellationToken.IsCancellationRequested)
+				{
+					await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+
+					if (TryReadDistance(out double distance) && distance > clearDistanceCm)
+					{
+						break;
+					}
+				}
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			// Expected when stopping
+		}
+		finally
+		{
+			StopMotors();
+		}
+	}
+
+	/// <summary>
 	/// Starts the background distance monitoring timer.
 	/// </summary>
 	/// <param name="thresholdCm">Minimum change threshold.</param>
@@ -488,6 +632,7 @@ public sealed class TobotController : IDisposable
 			return;
 		}
 
+		StopRandomDrive();
 		_distanceMonitoringSubscription?.Dispose();
 		_distanceSubject.OnCompleted();
 		_distanceSubject.Dispose();

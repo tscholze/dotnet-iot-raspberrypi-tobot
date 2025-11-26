@@ -12,8 +12,8 @@ class Program
     static void Main(string[] args)
     {
         Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");
-        Console.WriteLine("║     Pimoroni Explorer HAT - Interactive Demo             ║");
-        Console.WriteLine("║     Tobot Robotics Platform - .NET 9                     ║");
+        Console.WriteLine("║     Pimoroni Explorer HAT - Interactive Demo              ║");
+        Console.WriteLine("║     Tobot Robotics Platform - .NET 10                     ║");
         Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
         Console.WriteLine();
 
@@ -37,22 +37,23 @@ class Program
         while (true)
         {
             Console.WriteLine("\n┌─────────────────────────────────────────────────────────┐");
-            Console.WriteLine("│  Select an Explorer HAT Demo:                          │");
-            Console.WriteLine("├─────────────────────────────────────────────────────────┤");
-            Console.WriteLine("│  1. LED Light Show          - Onboard LED patterns     │");
-            Console.WriteLine("│  2. Digital Input Monitor   - Read input states        │");
-            Console.WriteLine("│  3. Digital Output Control  - Control outputs          │");
-            Console.WriteLine("│  4. Analog Sensor Reader    - Read analog voltages     │");
-            Console.WriteLine("│  5. Motor Control Demo      - Drive motors             │");
-            Console.WriteLine("│  6. Touch Sensor Demo       - Capacitive touch         │");
-            Console.WriteLine("│  7. Robot Control System    - Complete robot control   │");
-            Console.WriteLine("│  8. System Status Check     - Test all components      │");
-            Console.WriteLine("│  9. Pan-Tilt HAT Demo       - Move pan & tilt servos   │");
-            Console.WriteLine("│ 10. HC-SR04 Distance Demo   - Ultrasonic range test    │");
-            Console.WriteLine("│ 11. Observable Distance     - Reactive distance monitor │");
-            Console.WriteLine("│  0. Exit                                                │");
-            Console.WriteLine("└─────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-11): ");
+            Console.WriteLine("│  Select an Explorer HAT Demo:                            │");
+            Console.WriteLine("├─────────────────────────────────────────────────────────-┤");
+            Console.WriteLine("│  01. LED Light Show          - Onboard LED patterns      │");
+            Console.WriteLine("│  02. Digital Input Monitor   - Read input states         │");
+            Console.WriteLine("│  03. Digital Output Control  - Control outputs           │");
+            Console.WriteLine("│  04. Analog Sensor Reader    - Read analog voltages      │");
+            Console.WriteLine("│  05. Motor Control Demo      - Drive motors              │");
+            Console.WriteLine("│  06. Touch Sensor Demo       - Capacitive touch          │");
+            Console.WriteLine("│  07. Robot Control System    - Complete robot control    │");
+            Console.WriteLine("│  08. System Status Check     - Test all components       │");
+            Console.WriteLine("│  09. Pan-Tilt HAT Demo       - Move pan & tilt servos    │");
+            Console.WriteLine("│  10. HC-SR04 Distance Demo   - Ultrasonic range test     │");
+            Console.WriteLine("│  11. Observable Distance     - Reactive distance monitor │");
+            Console.WriteLine("│  12. Random Drive Demo       - Autonomous obstacle avoid │");
+            Console.WriteLine("│  0. Exit                                                 │");
+            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+            Console.Write("\nEnter your choice (0-12): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -92,11 +93,14 @@ class Program
                 case "11":
                     RunObservableDistanceDemo(controller);
                     break;
+                case "12":
+                    RunRandomDriveDemo(controller);
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-11.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-12.");
                     break;
             }
 
@@ -148,9 +152,13 @@ class Program
             case "rxdistance":
                 RunObservableDistanceDemo(controller);
                 break;
+            case "randomdrive":
+            case "autonomous":
+                RunRandomDriveDemo(controller);
+                break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive");
                 break;
         }
     }
@@ -722,6 +730,60 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error initializing HC-SR04 sensor: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Demonstrates autonomous random drive with obstacle avoidance.
+    /// Robot drives forward until detecting an obstacle, then randomly turns left or right until clear.
+    /// </summary>
+    static void RunRandomDriveDemo(TobotController controller)
+    {
+        Console.WriteLine("🤖 Random Drive Demo (Autonomous Obstacle Avoidance)");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Starting autonomous navigation...");
+        Console.WriteLine("Press any key to stop.\n");
+
+        try
+        {
+            Console.WriteLine("▶ Configuration:");
+            Console.WriteLine("  Forward Speed: 50%");
+            Console.WriteLine("  Turn Speed: 40%");
+            Console.WriteLine("  Obstacle Distance: < 20cm");
+            Console.WriteLine("  Clear Distance: > 30cm\n");
+
+            // Start autonomous driving in background
+            var driveTask = controller.StartRandomDrive(
+                forwardSpeed: 50,
+                turnSpeed: 40,
+                obstacleDistanceCm: 20.0,
+                clearDistanceCm: 30.0);
+
+            Console.WriteLine("🚀 Autonomous mode active!\n");
+
+            // Wait for key press
+            Console.ReadKey(intercept: true);
+
+            // Stop autonomous driving
+            Console.WriteLine("\n▶ Stopping autonomous mode...");
+            controller.StopRandomDrive();
+
+            // Wait for task to complete
+            try
+            {
+                driveTask.Wait(TimeSpan.FromSeconds(2));
+            }
+            catch (AggregateException)
+            {
+                // Expected when task is cancelled
+            }
+
+            Console.WriteLine("\n✅ Random drive demo complete!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error: {ex.Message}");
+            controller.StopRandomDrive();
         }
     }
 
