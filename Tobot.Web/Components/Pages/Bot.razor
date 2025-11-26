@@ -1,5 +1,5 @@
 @page "/bot"
-@implements IDisposable
+@implements IAsyncDisposable
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client
 @using Tobot.Web.Hubs
@@ -18,7 +18,7 @@
             <div class="eyelid"></div>
         </div>
     </div>
-    
+
     <div class="eye-wrapper right-eye">
         <div class="eye">
             <div class="eyeball">
@@ -86,7 +86,7 @@
         background: #fff;
         border-radius: 50%;
         overflow: hidden;
-        box-shadow: 
+        box-shadow:
             0 0 40px rgba(255, 255, 255, 0.3),
             inset 0 -20px 40px rgba(0, 0, 0, 0.1);
         animation: blink 5s ease-in-out infinite;
@@ -162,24 +162,35 @@
 
     /* Animations */
     @@keyframes float {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translateY(0px) scale(1);
         }
+
         50% {
             transform: translateY(-8px) scale(1.02);
         }
     }
 
     @@keyframes blink {
-        0%, 10%, 20%, 100% {
+
+        0%,
+        10%,
+        20%,
+        100% {
             /* Eyes open - eyelid stays up */
         }
-        12%, 18% {
+
+        12%,
+        18% {
             /* Quick blink */
         }
+
         12% .eyelid {
             top: 0;
         }
+
         18% .eyelid {
             top: -400px;
         }
@@ -195,27 +206,38 @@
 
     /* Blink effect using steps */
     @@keyframes blink {
-        0%, 88%, 92%, 100% {
+
+        0%,
+        88%,
+        92%,
+        100% {
             /* Do nothing, eyes open */
         }
+
         90% {
             /* Close eyes briefly */
         }
     }
 
     @@keyframes look {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translate(-50%, -50%);
         }
+
         20% {
             transform: translate(-48%, -52%);
         }
+
         40% {
             transform: translate(-52%, -50%);
         }
+
         60% {
             transform: translate(-50%, -48%);
         }
+
         80% {
             transform: translate(-51%, -51%);
         }
@@ -223,10 +245,16 @@
 
     /* Manual blink trigger via CSS animation */
     @@keyframes blink-eyelid {
-        0%, 45%, 55%, 100% {
+
+        0%,
+        45%,
+        55%,
+        100% {
             top: -400px;
         }
-        48%, 52% {
+
+        48%,
+        52% {
             top: 0;
         }
     }
@@ -321,19 +349,25 @@
     }
 
     @@keyframes happy-bounce {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: scaleY(0.7) translateY(0);
         }
+
         50% {
             transform: scaleY(0.65) translateY(-10px);
         }
     }
 
     @@keyframes sparkle {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: scale(1);
             opacity: 1;
         }
+
         50% {
             transform: scale(1.3);
             opacity: 0.8;
@@ -341,44 +375,86 @@
     }
 
     @@keyframes look-happy {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translate(-50%, -50%) rotate(-8deg) scale(1.05);
         }
+
         25% {
             transform: translate(-45%, -48%) rotate(8deg) scale(1.08);
         }
+
         75% {
             transform: translate(-55%, -52%) rotate(-8deg) scale(1.05);
         }
     }
 
     @@keyframes happy-wink {
-        0%, 85%, 100% {
+
+        0%,
+        85%,
+        100% {
             top: -500px;
         }
-        90%, 95% {
+
+        90%,
+        95% {
             top: 0px;
         }
     }
 
     @@keyframes tremble {
-        0% { transform: translate(0, 0) rotate(0deg); }
-        10% { transform: translate(-3px, -2px) rotate(-1deg); }
-        20% { transform: translate(3px, 2px) rotate(1deg); }
-        30% { transform: translate(-2px, 3px) rotate(-0.5deg); }
-        40% { transform: translate(2px, -3px) rotate(0.5deg); }
-        50% { transform: translate(-3px, 1px) rotate(-1deg); }
-        60% { transform: translate(3px, -1px) rotate(1deg); }
-        70% { transform: translate(-1px, 2px) rotate(-0.5deg); }
-        80% { transform: translate(1px, -2px) rotate(0.5deg); }
-        90% { transform: translate(-2px, -1px) rotate(-1deg); }
-        100% { transform: translate(2px, 1px) rotate(1deg); }
+        0% {
+            transform: translate(0, 0) rotate(0deg);
+        }
+
+        10% {
+            transform: translate(-3px, -2px) rotate(-1deg);
+        }
+
+        20% {
+            transform: translate(3px, 2px) rotate(1deg);
+        }
+
+        30% {
+            transform: translate(-2px, 3px) rotate(-0.5deg);
+        }
+
+        40% {
+            transform: translate(2px, -3px) rotate(0.5deg);
+        }
+
+        50% {
+            transform: translate(-3px, 1px) rotate(-1deg);
+        }
+
+        60% {
+            transform: translate(3px, -1px) rotate(1deg);
+        }
+
+        70% {
+            transform: translate(-1px, 2px) rotate(-0.5deg);
+        }
+
+        80% {
+            transform: translate(1px, -2px) rotate(0.5deg);
+        }
+
+        90% {
+            transform: translate(-2px, -1px) rotate(-1deg);
+        }
+
+        100% {
+            transform: translate(2px, 1px) rotate(1deg);
+        }
     }
 
     @@keyframes bulge {
         0% {
             transform: scale(1);
         }
+
         100% {
             transform: scale(1.08);
         }
@@ -388,30 +464,66 @@
         0% {
             transform: translate(-50%, -50%) scale(0.95);
         }
+
         100% {
             transform: translate(-50%, -50%) scale(1.15);
         }
     }
 
     @@keyframes panic-dart {
-        0% { transform: translate(-50%, -50%); }
-        10% { transform: translate(-55%, -45%); }
-        20% { transform: translate(-45%, -55%); }
-        30% { transform: translate(-52%, -48%); }
-        40% { transform: translate(-48%, -52%); }
-        50% { transform: translate(-54%, -46%); }
-        60% { transform: translate(-46%, -54%); }
-        70% { transform: translate(-51%, -49%); }
-        80% { transform: translate(-49%, -51%); }
-        90% { transform: translate(-53%, -47%); }
-        100% { transform: translate(-47%, -53%); }
+        0% {
+            transform: translate(-50%, -50%);
+        }
+
+        10% {
+            transform: translate(-55%, -45%);
+        }
+
+        20% {
+            transform: translate(-45%, -55%);
+        }
+
+        30% {
+            transform: translate(-52%, -48%);
+        }
+
+        40% {
+            transform: translate(-48%, -52%);
+        }
+
+        50% {
+            transform: translate(-54%, -46%);
+        }
+
+        60% {
+            transform: translate(-46%, -54%);
+        }
+
+        70% {
+            transform: translate(-51%, -49%);
+        }
+
+        80% {
+            transform: translate(-49%, -51%);
+        }
+
+        90% {
+            transform: translate(-53%, -47%);
+        }
+
+        100% {
+            transform: translate(-47%, -53%);
+        }
     }
 
     @@keyframes angry-pulse {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: scaleX(1.1) scaleY(0.85);
             box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), inset 0 0 20px rgba(255, 0, 0, 0.2);
         }
+
         50% {
             transform: scaleX(1.15) scaleY(0.8);
             box-shadow: 0 0 50px rgba(255, 0, 0, 0.9), inset 0 0 30px rgba(255, 0, 0, 0.4);
@@ -419,36 +531,48 @@
     }
 
     @@keyframes angry-contract {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translate(-50%, -50%) scaleY(1);
         }
+
         50% {
             transform: translate(-50%, -50%) scaleY(1.2);
         }
     }
 
     @@keyframes look-angry {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translate(-50%, -42%);
         }
+
         50% {
             transform: translate(-50%, -38%);
         }
     }
 
     @@keyframes angry-intensify {
-        0%, 100% {
+
+        0%,
+        100% {
             filter: brightness(1);
         }
+
         50% {
             filter: brightness(1.2);
         }
     }
 
     @@keyframes angry-squint {
-        0%, 100% {
+
+        0%,
+        100% {
             top: -250px;
         }
+
         50% {
             top: -200px;
         }
@@ -468,7 +592,7 @@
 
     /* Add a subtle glow on hover */
     .eye-wrapper:hover .eye {
-        box-shadow: 
+        box-shadow:
             0 0 60px rgba(100, 200, 255, 0.6),
             inset 0 -20px 40px rgba(0, 0, 0, 0.1);
     }
@@ -480,20 +604,49 @@
     /// </summary>
     private enum Mood
     {
+        /// <summary>
+        /// Neutral mood.
+        /// </summary>
         Neutral,
+
+        /// <summary>
+        /// Happy mood.
+        /// </summary>
         Happy,
+        /// <summary>
+        /// Terrified mood.
+        /// </summary>
         Terrified,
+        /// <summary>
+        /// Angry mood.
+        /// </summary>
         Angry
     }
 
+    /// <summary>
+    /// The current emotional state of the robot eyes.
+    /// </summary>
     private Mood _currentMood = Mood.Neutral;
-    private Timer? _moodTimer;
-    private int _moodIndex = 0;
 
-    // Live distance display
+
+    /// <summary>
+    /// Display text showing the current distance measurement from the HC-SR04 sensor.
+    /// </summary>
     private string _distanceText = "-- cm";
+
+    /// <summary>
+    /// SignalR hub connection for receiving real-time distance updates from TobotHub.
+    /// </summary>
     private HubConnection? _hubConnection;
+
+    /// <summary>
+    /// The last measured distance value, used for detecting increases/decreases.
+    /// </summary>
     private double? _lastDistance;
+
+    /// <summary>
+    /// Cancellation token source for the 5-second neutral mood timer.
+    /// </summary>
     private CancellationTokenSource? _neutralCts;
 
     /// <summary>
@@ -510,22 +663,17 @@
         };
     }
 
+    /// <summary>
+    /// Initializes the component by setting up the SignalR connection and subscribing to distance change events.
+    /// Implements reactive mood logic: Angry when distance < 10cm, Happy when distance increases, Neutral after 5 seconds.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        // Cycle through moods every 4 seconds for testing
-        _moodTimer = new Timer(_ =>
-        {
-            var moods = Enum.GetValues<Mood>();
-            _moodIndex = (_moodIndex + 1) % moods.Length;
-            _currentMood = moods[_moodIndex];
-            InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4));
-
         // Setup SignalR connection for distance updates
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
-            .WithAutomaticReconnect()
-            .Build();
+        .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
+        .WithAutomaticReconnect()
+        .Build();
 
         _hubConnection.On<double>(TobotHubEvents.DistanceChanged, cm =>
         {
@@ -555,22 +703,7 @@
                 // Schedule neutral after 5 seconds
                 var cts = new CancellationTokenSource();
                 _neutralCts = cts;
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
-                        if (!cts.IsCancellationRequested)
-                        {
-                            _currentMood = Mood.Neutral;
-                            await InvokeAsync(StateHasChanged);
-                        }
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // ignored
-                    }
-                });
+                _ = ResetToNeutralAfterDelayAsync(cts.Token);
             }
             else
             {
@@ -590,13 +723,44 @@
         }
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Resets the mood to Neutral after a 5-second delay if not cancelled.
+    /// </summary>
+    /// <param name="cancellationToken">Token to cancel the delayed reset.</param>
+    private async Task ResetToNeutralAfterDelayAsync(CancellationToken cancellationToken)
     {
-        _moodTimer?.Dispose();
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+            _currentMood = Mood.Neutral;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+            // Expected when mood changes before delay completes
+        }
+    }
+
+    /// <summary>
+    /// Disposes of resources including the cancellation token source and SignalR hub connection.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        _neutralCts?.Cancel();
+        _neutralCts?.Dispose();
+        
         if (_hubConnection is not null)
         {
-            try { _hubConnection.StopAsync(); } catch { }
-            try { _hubConnection.DisposeAsync(); } catch { }
+            try
+            {
+                await _hubConnection.StopAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+            
+            await _hubConnection.DisposeAsync().ConfigureAwait(false);
         }
     }
 }
