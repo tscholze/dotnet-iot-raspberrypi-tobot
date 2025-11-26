@@ -49,9 +49,10 @@ class Program
             Console.WriteLine("│  8. System Status Check     - Test all components      │");
             Console.WriteLine("│  9. Pan-Tilt HAT Demo       - Move pan & tilt servos   │");
             Console.WriteLine("│ 10. HC-SR04 Distance Demo   - Ultrasonic range test    │");
+            Console.WriteLine("│ 11. Observable Distance     - Reactive distance monitor │");
             Console.WriteLine("│  0. Exit                                                │");
             Console.WriteLine("└─────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-10): ");
+            Console.Write("\nEnter your choice (0-11): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -88,11 +89,14 @@ class Program
                 case "10":
                     RunHcSr04Demo(controller);
                     break;
+                case "11":
+                    RunObservableDistanceDemo(controller);
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-10.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-11.");
                     break;
             }
 
@@ -140,9 +144,13 @@ class Program
             case "ultrasonic":
                 RunHcSr04Demo(controller);
                 break;
+            case "observable":
+            case "rxdistance":
+                RunObservableDistanceDemo(controller);
+                break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable");
                 break;
         }
     }
@@ -625,6 +633,57 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"\n❌ System Check Failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Demonstrates reactive distance monitoring using System.Reactive.
+    /// Shows how to observe distance changes with automatic 500ms polling and 1cm threshold.
+    /// </summary>
+    static void RunObservableDistanceDemo(TobotController controller)
+    {
+        Console.WriteLine("🔭 Observable Distance Monitor (Reactive)");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Monitoring distance changes reactively...");
+        Console.WriteLine("Press any key to stop monitoring.\n");
+
+        const double thresholdCm = 1.0;
+        const int samplesPerReading = 5;
+
+        try
+        {
+            // Subscribe to distance changes
+            var subscription = controller.ObserveDistance(thresholdCm, samplesPerReading)
+                .Subscribe(
+                    distance =>
+                    {
+                        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                        Console.WriteLine($"[{timestamp}] ⚡ Distance changed: {distance:F1} cm");
+                    },
+                    error =>
+                    {
+                        Console.WriteLine($"❌ Error: {error.Message}");
+                    },
+                    () =>
+                    {
+                        Console.WriteLine("✅ Monitoring completed.");
+                    }
+                );
+
+            Console.WriteLine($"📊 Monitoring with {thresholdCm:F1}cm threshold and {samplesPerReading} samples per reading.");
+            Console.WriteLine("   Changes are detected automatically every 500ms.\n");
+
+            // Wait for user to press key
+            Console.ReadKey(intercept: true);
+
+            // Clean up subscription
+            subscription.Dispose();
+
+            Console.WriteLine("\n✅ Observable distance demo complete!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error: {ex.Message}");
         }
     }
 

@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Iot.Device.Bindings" Version="4.0.1" />
     <PackageReference Include="System.Device.Gpio" Version="4.0.1" />
+    <PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
 
 </Project>

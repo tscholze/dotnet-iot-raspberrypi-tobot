@@ -40,4 +40,10 @@ public static class TobotHubEvents
     /// Parameters: outputNumber (int)
     /// </summary>
     public const string OutputToggled = nameof(OutputToggled);
+
+    /// <summary>
+    /// Event sent when the HC-SR04 distance changes by threshold.
+    /// Parameters: distanceCm (double)
+    /// </summary>
+    public const string DistanceChanged = nameof(DistanceChanged);
 }

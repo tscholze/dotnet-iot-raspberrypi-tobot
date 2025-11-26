@@ -1,5 +1,7 @@
 using System;
 using System.Device.Gpio;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Tobot.Device.ExplorerHat.Motor;
 using Tobot.Device.HcSr04;
 using ExplorerHatDevice = Tobot.Device.ExplorerHat.ExplorerHat;
@@ -32,6 +34,21 @@ public sealed class TobotController : IDisposable
 	/// Cached HC-SR04 distance sensor (created on first use).
 	/// </summary>
 	private HcSr04Sensor? _distanceSensor;
+
+	/// <summary>
+	/// Subject for broadcasting distance changes.
+	/// </summary>
+	private readonly Subject<double> _distanceSubject = new();
+
+	/// <summary>
+	/// Subscription for distance monitoring timer.
+	/// </summary>
+	private IDisposable? _distanceMonitoringSubscription;
+
+	/// <summary>
+	/// Last measured distance value for change detection.
+	/// </summary>
+	private double? _lastDistance;
 
 	/// <summary>
 	/// Tracks whether the controller has been disposed.
@@ -403,6 +420,65 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Gets an observable sequence that emits distance measurements when they change by more than the specified threshold.
+	/// The sensor is polled every 500ms and changes greater than 1cm trigger a notification.
+	/// </summary>
+	/// <param name="thresholdCm">Minimum change in centimeters to trigger notification (default 1.0cm).</param>
+	/// <param name="samples">Number of samples to average per reading.</param>
+	/// <returns>Observable sequence of distance measurements in centimeters.</returns>
+	public IObservable<double> ObserveDistance(double thresholdCm = 1.0, int samples = HcSr04Sensor.DefaultSamplesPerReading)
+	{
+		EnsureNotDisposed();
+
+		if (thresholdCm <= 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(thresholdCm), "Threshold must be greater than zero.");
+		}
+
+		// Start monitoring if not already active
+		if (_distanceMonitoringSubscription == null)
+		{
+			StartDistanceMonitoring(thresholdCm, samples);
+		}
+
+		return _distanceSubject.AsObservable();
+	}
+
+	/// <summary>
+	/// Starts the background distance monitoring timer.
+	/// </summary>
+	/// <param name="thresholdCm">Minimum change threshold.</param>
+	/// <param name="samples">Number of samples per reading.</param>
+	private void StartDistanceMonitoring(double thresholdCm, int samples)
+	{
+		_distanceMonitoringSubscription = Observable
+			.Interval(TimeSpan.FromMilliseconds(500))
+			.Subscribe(_ =>
+			{
+				if (_disposed)
+				{
+					return;
+				}
+
+				try
+				{
+					if (TryReadDistance(out double currentDistance, samples))
+					{
+						if (_lastDistance == null || Math.Abs(currentDistance - _lastDistance.Value) >= thresholdCm)
+						{
+							_lastDistance = currentDistance;
+							_distanceSubject.OnNext(currentDistance);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					_distanceSubject.OnError(ex);
+				}
+			});
+	}
+
+	/// <summary>
 	/// Releases all managed resources associated with the controller and its peripherals.
 	/// </summary>
 	public void Dispose()
@@ -412,6 +488,9 @@ public sealed class TobotController : IDisposable
 			return;
 		}
 
+		_distanceMonitoringSubscription?.Dispose();
+		_distanceSubject.OnCompleted();
+		_distanceSubject.Dispose();
 		_distanceSensor?.Dispose();
 		_panTiltHat?.Dispose();
 		_explorerHat?.Dispose();

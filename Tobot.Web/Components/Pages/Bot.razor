@@ -1,10 +1,14 @@
 @page "/bot"
 @implements IDisposable
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client
+@using Tobot.Web.Hubs
+@inject NavigationManager Navigation
 
 <PageTitle>Tobot Bot</PageTitle>
 
 <div class="eyes-container @GetMoodClass()">
+    <div class="distance-indicator">@_distanceText</div>
     <div class="eye-wrapper left-eye">
         <div class="eye">
             <div class="eyeball">
@@ -45,6 +49,21 @@
         position: fixed;
         top: 0;
         left: 0;
+    }
+
+    .distance-indicator {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #8df0ff;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 20px;
+        border: 1px solid rgba(141, 240, 255, 0.4);
+        border-radius: 6px;
+        box-shadow: 0 0 12px rgba(141, 240, 255, 0.3);
+        z-index: 1000;
     }
 
     .eye-wrapper {
@@ -471,6 +490,12 @@
     private Timer? _moodTimer;
     private int _moodIndex = 0;
 
+    // Live distance display
+    private string _distanceText = "-- cm";
+    private HubConnection? _hubConnection;
+    private double? _lastDistance;
+    private CancellationTokenSource? _neutralCts;
+
     /// <summary>
     /// Returns the CSS class corresponding to the current mood.
     /// </summary>
@@ -485,7 +510,7 @@
         };
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         // Cycle through moods every 4 seconds for testing
         _moodTimer = new Timer(_ =>
@@ -495,10 +520,83 @@
             _currentMood = moods[_moodIndex];
             InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4));
+
+        // Setup SignalR connection for distance updates
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<double>(TobotHubEvents.DistanceChanged, cm =>
+        {
+            _distanceText = $"{cm:F1} cm";
+
+            // Reactive mood logic:
+            // - Start neutral
+            // - If distance < 10cm → Angry
+            // - If distance then increases → Happy
+            // - After 5 seconds → Neutral
+            var previous = _lastDistance;
+            _lastDistance = cm;
+
+            // Cancel any pending neutralization timer
+            _neutralCts?.Cancel();
+            _neutralCts?.Dispose();
+            _neutralCts = null;
+
+            if (cm < 10.0)
+            {
+                _currentMood = Mood.Angry;
+            }
+            else if (previous.HasValue && cm > previous.Value)
+            {
+                _currentMood = Mood.Happy;
+
+                // Schedule neutral after 5 seconds
+                var cts = new CancellationTokenSource();
+                _neutralCts = cts;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+                        if (!cts.IsCancellationRequested)
+                        {
+                            _currentMood = Mood.Neutral;
+                            await InvokeAsync(StateHasChanged);
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // ignored
+                    }
+                });
+            }
+            else
+            {
+                // No specific rule matched; stay in current mood
+            }
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        try
+        {
+            await _hubConnection.StartAsync();
+        }
+        catch
+        {
+            _distanceText = "(no hub)";
+        }
     }
 
     public void Dispose()
     {
         _moodTimer?.Dispose();
+        if (_hubConnection is not null)
+        {
+            try { _hubConnection.StopAsync(); } catch { }
+            try { _hubConnection.DisposeAsync(); } catch { }
+        }
     }
 }
