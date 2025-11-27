@@ -46,4 +46,10 @@ public static class TobotHubEvents
     /// Parameters: distanceCm (double)
     /// </summary>
     public const string DistanceChanged = nameof(DistanceChanged);
+
+    /// <summary>
+    /// Event sent when a light show is started.
+    /// Parameters: cycleCount (int)
+    /// </summary>
+    public const string LightShowStarted = nameof(LightShowStarted);
 }

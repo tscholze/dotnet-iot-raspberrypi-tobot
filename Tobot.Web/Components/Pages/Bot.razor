@@ -724,6 +724,9 @@
         {
             await _hubConnection.StartAsync();
             
+            // Start light show on startup
+            await _hubConnection.InvokeAsync("PlayLightShow", 3);
+            
             // Start autonomous driving
             _randomDriveTask = Controller.StartRandomDrive(
                 forwardSpeed: 50,

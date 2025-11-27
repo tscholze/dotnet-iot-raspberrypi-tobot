@@ -161,6 +161,29 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Plays a simple light show by sequentially lighting each LED in a pattern.
+	/// </summary>
+	/// <param name="cycleCount">Number of complete cycles to perform.</param>
+	public void PlayLightShow(int cycleCount = 10)
+	{
+		for (int cycle = 0; cycle < cycleCount; cycle++)
+		{
+			for (int i = 1; i <= 4; i++)
+			{
+				SetLedState(i, true);
+				Thread.Sleep(100);
+				SetLedState(i, false);
+			}
+			for (int i = 3; i >= 2; i--)
+			{
+				SetLedState(i, true);
+				Thread.Sleep(100);
+				SetLedState(i, false);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Drives a digital output line on the Explorer HAT.
 	/// </summary>
 	/// <param name="outputIndex">Output index (1-4).</param>

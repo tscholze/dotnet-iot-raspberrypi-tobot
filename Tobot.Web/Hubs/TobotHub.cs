@@ -7,27 +7,24 @@ namespace Tobot.Web.Hubs;
 /// SignalR hub for controlling the Tobot ExplorerHat device.
 /// Exposes all public features of ExplorerHat to remote clients.
 /// </summary>
-public class TobotHub : Hub
+/// <remarks>
+/// Initializes a new instance of the <see cref="TobotHub"/> class.
+/// </remarks>
+/// <param name="explorerHat">The ExplorerHat instance.</param>
+/// <param name="controller">The TobotController instance.</param>
+public class TobotHub(ExplorerHat explorerHat, Device.TobotController controller) : Hub
 {
     #region Private Fields
 
     /// <summary>
     /// The ExplorerHat instance to control.
     /// </summary>
-    private readonly ExplorerHat _explorerHat;
-
-    #endregion
-
-    #region Constructor
+    private readonly ExplorerHat _explorerHat = explorerHat;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="TobotHub"/> class.
+    /// The TobotController instance for higher-level operations.
     /// </summary>
-    /// <param name="explorerHat">The ExplorerHat instance.</param>
-    public TobotHub(ExplorerHat explorerHat)
-    {
-        _explorerHat = explorerHat;
-    }
+    private readonly Device.TobotController _controller = controller;
 
     #endregion
 
@@ -193,6 +190,20 @@ public class TobotHub : Hub
     public bool IsTouchPressed(int touchNumber)
     {
         return _explorerHat.Touch[touchNumber].IsTouched();
+    }
+
+    #endregion
+
+    #region Light Show
+
+    /// <summary>
+    /// Plays a light show by sequentially lighting each LED in a pattern.
+    /// </summary>
+    /// <param name="cycleCount">Number of complete cycles to perform (default 10).</param>
+    public async Task PlayLightShow(int cycleCount = 10)
+    {
+        await Clients.All.SendAsync(TobotHubEvents.LightShowStarted, cycleCount);
+        await Task.Run(() => _controller.PlayLightShow(cycleCount));
     }
 
     #endregion
