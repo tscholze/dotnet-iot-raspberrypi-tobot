@@ -8,7 +8,7 @@
 
 <PageTitle>Tobot Bot</PageTitle>
 
-<div class="eyes-container @GetMoodClass()" @onclick="HandleClick">
+<div class="eyes-container @GetMoodClass()" @onclick="HandleFullscreenClick">
     <div class="distance-indicator">@_distanceText</div>
     <div class="eye-wrapper left-eye">
         <div class="eye">
@@ -657,6 +657,11 @@
     private Task? _randomDriveTask;
 
     /// <summary>
+    /// Indicates whether random drive is currently active.
+    /// </summary>
+    private bool _isRandomDriveActive;
+
+    /// <summary>
     /// Returns the CSS class corresponding to the current mood.
     /// </summary>
     private string GetMoodClass()
@@ -723,16 +728,6 @@
         try
         {
             await _hubConnection.StartAsync();
-            
-            // Start light show on startup
-            await _hubConnection.InvokeAsync("PlayLightShow", 3);
-            
-            // Start autonomous driving
-            _randomDriveTask = Controller.StartRandomDrive(
-                forwardSpeed: 50,
-                turnSpeed: 40,
-                obstacleDistanceCm: 20.0,
-                clearDistanceCm: 30.0);
         }
         catch
         {
@@ -759,11 +754,24 @@
     }
 
     /// <summary>
-    /// Handles click events on the page to stop autonomous driving.
+    /// Handles click events on the page to toggle autonomous driving.
     /// </summary>
-    private void HandleClick()
+    private void HandleFullscreenClick()
     {
-        Controller.StopRandomDrive();
+        if (_isRandomDriveActive)
+        {
+            Controller.StopRandomDrive();
+            _isRandomDriveActive = false;
+            return;
+        }
+
+        _randomDriveTask = Controller.StartRandomDrive(
+            forwardSpeed: 50,
+            turnSpeed: 40,
+            obstacleDistanceCm: 20.0,
+            clearDistanceCm: 30.0);
+
+        _isRandomDriveActive = true;
     }
 
     /// <summary>
@@ -775,6 +783,7 @@
         _neutralCts?.Dispose();
         
         Controller.StopRandomDrive();
+        _isRandomDriveActive = false;
         
         if (_randomDriveTask is not null)
         {
