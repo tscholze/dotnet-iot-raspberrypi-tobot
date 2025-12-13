@@ -1,0 +1,20 @@
+@page "/remote"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Tobot.Web.Hubs
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
+
+<PageTitle>Tobot - Remote Control</PageTitle>
+
+<h1>Tobot Remote Control</h1>
+
+<div>
+    <button @onclick="Forward">Forward</button>
+    <button @onclick="Backward">Backward</button>
+    <button @onclick="Stop">Stop</button>
+    <button @onclick="Left">Left</button>
+    <button @onclick="Right">Right</button>
+    <button @onclick="LightOn">Light On</button>
+    <button @onclick="LightOff">Light Off</button>
+</div>
+
