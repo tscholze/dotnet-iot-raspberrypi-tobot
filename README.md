@@ -154,8 +154,82 @@ A modern web-based control interface featuring:
 - **Interactive UI** - Clean, responsive Blazor interface
 - **Event Monitoring** - Track all robot actions in real-time
 - **Multi-Device Support** - Access from phones, tablets, or computers
+- **URL-Triggered Actions** - Trigger robot commands via query parameters
 
-Access the web interface at `http://[raspberry-pi-ip]:5247/simple`
+#### Available Pages
+
+**Simple Control** (`/simple`)
+- Styled button interface for motors, LEDs, and digital outputs
+- Real-time event log showing all hub activity
+- Speed control sliders for motors
+- Connection status indicator
+
+**Remote Control** (`/remote`)
+- Minimal, unstyled button interface
+- Supports query parameter `action` for URL-triggered commands
+- Ideal for embedded frames or remote triggers
+
+**Bot** (`/bot`)
+- Animated reactive eyes with mood states
+- Distance sensor visualization
+- Click-to-toggle random autonomous driving
+- Responsive mood changes based on sensor data
+
+#### Remote Control Query Parameters
+
+The `/remote` page supports triggering actions via URL query parameter `action`:
+
+```
+http://[raspberry-pi-ip]:5247/remote?action=forward
+http://[raspberry-pi-ip]:5247/remote?action=backward
+http://[raspberry-pi-ip]:5247/remote?action=stop
+http://[raspberry-pi-ip]:5247/remote?action=left
+http://[raspberry-pi-ip]:5247/remote?action=right
+http://[raspberry-pi-ip]:5247/remote?action=light-on
+http://[raspberry-pi-ip]:5247/remote?action=light-off
+```
+
+Supported action values:
+- **Movement**: `forward`, `backward`, `stop`, `left`, `right`
+- **Lights**: `light-on` (or `lighton`), `light-off` (or `lightoff`)
+
+Use cases:
+- Trigger actions from external scripts or dashboards
+- Create custom control buttons/links
+- Automate robot behavior via HTTP requests
+
+### 🎮 Tobot.PicoRemote Application
+
+A wireless remote control firmware for the **Raspberry Pi Pico W** with **Pimoroni PicoKeypad**, enabling control of Tobot from a handheld 16-button wireless controller.
+
+Features:
+- **16-Key RGB Keypad** - Intuitive button layout with visual LED feedback
+- **WiFi Connectivity** - Sends HTTP GET requests to Tobot.Web's `/remote` endpoint
+- **Status Indicators** - Real-time LED display of boot, WiFi, and remote endpoint status
+- **Controller Layout**:
+  - Directional controls: Up (forward), Down (backward), Left, Right
+  - Center Stop button
+  - Special function keys for Light On/Off and additional controls
+- **Configuration** - Easily customizable host, port, and key mappings
+
+Requirements:
+- Raspberry Pi Pico W (WiFi capable)
+- Pimoroni PicoKeypad (16 RGB backlit keys)
+- MicroPython with `picokeypad` library
+- WiFi credentials in `secret.py` (SSID and PASSWORD)
+- Network access to Tobot.Web application
+
+Usage:
+```bash
+# Configure WiFi credentials
+echo "SSID = 'your-wifi-name'" > Tobot.PicoRemote/secret.py
+echo "PASSWORD = 'your-wifi-password'" >> Tobot.PicoRemote/secret.py
+
+# Upload remote-control.py to Pico W via Thonny or similar
+# The firmware will auto-start and connect to your Tobot.Web instance
+```
+
+Note: Update `REMOTE_HOST` and `REMOTE_PORT` in `remote-control.py` to match your Tobot.Web deployment.
 
 ---
 
@@ -245,14 +319,20 @@ Tobot/
 │       ├── PanTiltHat.cs              High-level pan/tilt API (MCU protocol)
 │       └── Pca9685.cs                 (Optional) PCA9685 helper (not required for MCU mode)
 │
-└── Tobot.Web/                      Web control interface
-    ├── Program.cs                     ASP.NET Core application
-    ├── Hubs/                          SignalR hubs
-    │   ├── TobotHub.cs                Main control hub
-    │   └── TobotHubEvents.cs          Event constants
-    └── Components/                    Blazor UI components
-        └── Pages/                     Web pages
-            └── Simple.razor           Control interface
+├── Tobot.Web/                         Web control interface
+│   ├── Program.cs                     ASP.NET Core application
+│   ├── Hubs/                          SignalR hubs
+│   │   ├── TobotHub.cs                Main control hub
+│   │   └── TobotHubEvents.cs          Event constants
+│   └── Components/                    Blazor UI components
+│       └── Pages/                     Web pages
+│           ├── Simple.razor           Styled control interface
+│           ├── Remote.razor           URL-triggered control interface
+│           └── Bot.razor              Animated reactive eyes
+│
+└── Tobot.PicoRemote/                  Pico W wireless remote firmware
+    ├── remote-control.py              Main firmware (MicroPython)
+    └── secret.py.example              WiFi credentials template
 ```
 
 ### Key Design Principles
