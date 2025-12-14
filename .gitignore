@@ -445,3 +445,4 @@ _build/
 # Project-specific ignores (add custom patterns below)
 # TestResults/
 # *.received.txt
+Tobot.PicoRemote/secret.py
