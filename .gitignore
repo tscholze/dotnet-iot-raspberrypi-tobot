@@ -411,6 +411,9 @@ sensor-data/
 hardware.config
 device.config
 
+# Pico Remote WiFi credentials (sensitive)
+Tobot.PicoRemote/secret.py
+
 ## User-specific files
 
 # User-specific files
