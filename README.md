@@ -339,11 +339,11 @@ Tobot/
 
 ### Key Design Principles
 
-? **Context-Related Packaging** - Grouped by functionality  
-? **Self-Contained Packages** - No cross-package dependencies  
-? **Clean APIs** - Intuitive, discoverable interfaces  
-? **Comprehensive Docs** - XML documentation everywhere  
-? **Resource Safety** - IDisposable pattern throughout  
+- Context-Related Packaging: Group by functionality for clarity
+- Self-Contained Packages: Avoid cross-package dependencies
+- Clean APIs: Intuitive, discoverable interfaces
+- Comprehensive Docs: XML documentation across the codebase
+- Resource Safety: Consistent `IDisposable` usage and cleanup
 
 ---
 
