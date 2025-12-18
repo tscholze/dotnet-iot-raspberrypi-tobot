@@ -1,3 +1,289 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Tobot.Web.Hubs
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
 
-<h1>hello</h1>
+<div class="page-shell">
+	<div class="video-card">
+		<div class="video-header">Live View</div>
+		<div class="video-frame">
+			<iframe src="http://pi41:8889/cam/" allow="camera; microphone; autoplay" title="Tobot camera feed"></iframe>
+		</div>
+	</div>
+
+	<div class="status-row">
+		<div class="@($"status-pill {(IsTooClose ? "danger" : "ok")}")">
+			<span class="label">Distance</span>
+			<span class="value">@DistanceText</span>
+		</div>
+	</div>
+
+	<div class="controls-card">
+		<div class="controls-header">Remote Control</div>
+		<div class="controls-grid">
+			<div class="spacer"></div>
+			<button class="control-btn forward" @onclick="Forward">▲ Forward</button>
+			<div class="spacer"></div>
+
+			<button class="control-btn left" @onclick="Left">◀ Left</button>
+			<button class="control-btn stop" @onclick="Stop">■ Stop</button>
+			<button class="control-btn right" @onclick="Right">Right ▶</button>
+		</div>
+	</div>
+</div>
+
+@code {
+	private HubConnection? _hubConnection;
+	private double? _distanceCm;
+	private const double DangerThresholdCm = 15.0;
+
+	private string DistanceText => _distanceCm.HasValue ? $"{_distanceCm.Value:F1} cm" : "--";
+	private bool IsTooClose => _distanceCm.HasValue && _distanceCm.Value < DangerThresholdCm;
+
+	protected override async Task OnInitializedAsync()
+	{
+		_hubConnection = new HubConnectionBuilder()
+			.WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
+			.WithAutomaticReconnect()
+			.Build();
+
+		_hubConnection.On<double>(TobotHubEvents.DistanceChanged, cm =>
+		{
+			_distanceCm = cm;
+			InvokeAsync(StateHasChanged);
+		});
+
+		try
+		{
+			await _hubConnection.StartAsync().ConfigureAwait(false);
+		}
+		catch
+		{
+			_distanceCm = null;
+		}
+	}
+
+	private async Task Forward()
+	{
+		if (_hubConnection is null) return;
+		await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorForward), 1, 60.0).ConfigureAwait(false);
+		await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorForward), 2, 60.0).ConfigureAwait(false);
+	}
+
+	private async Task Left()
+	{
+		if (_hubConnection is null) return;
+		await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorBackward), 1, 50.0).ConfigureAwait(false);
+		await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorForward), 2, 50.0).ConfigureAwait(false);
+	}
+
+	private async Task Right()
+	{
+		if (_hubConnection is null) return;
+		await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorForward), 1, 50.0).ConfigureAwait(false);
+		await _hubConnection.InvokeAsync(nameof(TobotHub.MoveMotorBackward), 2, 50.0).ConfigureAwait(false);
+	}
+
+	private async Task Stop()
+	{
+		if (_hubConnection is null) return;
+		await _hubConnection.InvokeAsync(nameof(TobotHub.StopAllMotors)).ConfigureAwait(false);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		if (_hubConnection is not null)
+		{
+			await _hubConnection.DisposeAsync().ConfigureAwait(false);
+		}
+	}
+}
+
+<style>
+	:root {
+		--bg: #05060a;
+		--panel: #0f1118;
+		--accent: #38ef7d;
+		--accent-2: #30cfd0;
+		--text: #e8ecf1;
+		--muted: #9aa4b5;
+		--danger: #ff4d4f;
+	}
+
+	.page-shell {
+		min-height: 100vh;
+		background: radial-gradient(circle at 10% 20%, #0d1324, #05060a 45%),
+					radial-gradient(circle at 90% 10%, #0f1b2f, #05060a 40%),
+					#05060a;
+		color: var(--text);
+		padding: 32px;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		align-items: center;
+		font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+	}
+
+	.video-card,
+	.controls-card {
+		width: min(1200px, 95vw);
+		background: var(--panel);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: 14px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+		overflow: hidden;
+	}
+
+	.video-header,
+	.controls-header {
+		padding: 14px 18px;
+		letter-spacing: 0.4px;
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 13px;
+		color: var(--muted);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	}
+
+	.video-frame {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		background: linear-gradient(135deg, #0c1220, #0a0f1b);
+	}
+
+	.video-frame iframe {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		border: none;
+		background: #000;
+	}
+
+	.status-row {
+		width: min(1200px, 95vw);
+		display: flex;
+		justify-content: flex-start;
+	}
+
+	.status-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 14px;
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		font-weight: 600;
+		color: var(--text);
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+	}
+
+	.status-pill .label {
+		color: var(--muted);
+		font-size: 13px;
+		text-transform: uppercase;
+		letter-spacing: 0.6px;
+	}
+
+	.status-pill .value {
+		font-size: 15px;
+	}
+
+	.status-pill.ok {
+		border-color: rgba(56, 239, 125, 0.35);
+		box-shadow: 0 10px 30px rgba(56, 239, 125, 0.15);
+	}
+
+	.status-pill.danger {
+		border-color: rgba(255, 77, 79, 0.35);
+		box-shadow: 0 10px 30px rgba(255, 77, 79, 0.2);
+		background: rgba(255, 77, 79, 0.08);
+	}
+
+	.controls-card {
+		padding: 20px 22px 28px;
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+
+	.controls-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(140px, 1fr));
+		gap: 14px;
+		justify-items: center;
+		align-items: center;
+	}
+
+	.control-btn {
+		width: 100%;
+		padding: 16px 14px;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: linear-gradient(135deg, rgba(56, 239, 125, 0.15), rgba(48, 207, 208, 0.12));
+		color: var(--text);
+		font-weight: 700;
+		letter-spacing: 0.4px;
+		cursor: pointer;
+		transition: transform 120ms ease, box-shadow 160ms ease, border-color 120ms ease;
+		box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+		backdrop-filter: blur(6px);
+	}
+
+	.control-btn:hover {
+		transform: translateY(-2px);
+		border-color: rgba(56, 239, 125, 0.5);
+		box-shadow: 0 20px 50px rgba(48, 207, 208, 0.18);
+	}
+
+	.control-btn:active {
+		transform: translateY(0px) scale(0.99);
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+	}
+
+	.control-btn.stop {
+		background: linear-gradient(135deg, rgba(255, 77, 79, 0.3), rgba(255, 77, 79, 0.18));
+		border-color: rgba(255, 77, 79, 0.35);
+		box-shadow: 0 18px 50px rgba(255, 77, 79, 0.25);
+	}
+
+	.control-btn.left,
+	.control-btn.right {
+		background: linear-gradient(135deg, rgba(48, 207, 208, 0.18), rgba(56, 239, 125, 0.14));
+	}
+
+	.spacer {
+		width: 100%;
+		height: 100%;
+	}
+
+	@@media (max-width: 900px) {
+		.page-shell {
+			padding: 16px;
+		}
+
+		.controls-grid {
+			grid-template-columns: repeat(3, minmax(110px, 1fr));
+		}
+	}
+
+	@@media (max-width: 640px) {
+		.controls-grid {
+			grid-template-columns: repeat(2, minmax(140px, 1fr));
+			grid-template-areas:
+				"forward forward"
+				"left stop"
+				"right right";
+		}
+
+		.control-btn.forward { grid-area: forward; }
+		.control-btn.left { grid-area: left; }
+		.control-btn.stop { grid-area: stop; }
+		.control-btn.right { grid-area: right; }
+
+		.spacer { display: none; }
+	}
+</style>
