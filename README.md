@@ -27,6 +27,16 @@
 
 ---
 
+## How it looks
+
+<div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <img src="_docs/bot-1.jpeg" alt="Tobot robot build" height="260" />
+    <img src="_docs/web-home-1.png" alt="Web remote home screen" height="260" />
+    <img src="_docs/pico-remote-1.jpeg" alt="Pico remote handheld controller" height="260" />
+</div>
+
+---
+
 ## ⚡ Quick Demo
 
 ```csharp
@@ -67,14 +77,14 @@ if (controller.ReadTouchSensor(1))
 
 A professional-grade driver library for the Explorer HAT with:
 
-| Package | Components | Description |
-|---------|-----------|-------------|
-| **🚗 Motor** | `Motor`, `MotorCollection` | H-bridge motor control with variable speed |
-| **💡 LED** | `Led`, `LedCollection` | Onboard LED control and patterns |
-| **📊 Analog** | `AnalogInput`, `AnalogInputCollection` | 0-5V analog input via ADS1015 ADC |
-| **🔌 Digital** | `DigitalInput/Output`, Collections | Digital I/O with event support |
-| **👆 Touch** | `TouchSensor`, `TouchCollection` | Capacitive touch via CAP1208 |
-| **📐 Distance** | `HcSr04Sensor` | Ultrasonic range finding with averaging |
+| Package        | Components                             | Description                                |
+| -------------- | -------------------------------------- | ------------------------------------------ |
+| **🚗 Motor**    | `Motor`, `MotorCollection`             | H-bridge motor control with variable speed |
+| **💡 LED**      | `Led`, `LedCollection`                 | Onboard LED control and patterns           |
+| **📊 Analog**   | `AnalogInput`, `AnalogInputCollection` | 0-5V analog input via ADS1015 ADC          |
+| **🔌 Digital**  | `DigitalInput/Output`, Collections     | Digital I/O with event support             |
+| **👆 Touch**    | `TouchSensor`, `TouchCollection`       | Capacitive touch via CAP1208               |
+| **📐 Distance** | `HcSr04Sensor`                         | Ultrasonic range finding with averaging    |
 
 #### 🧭 Pan-Tilt HAT
 
@@ -413,13 +423,13 @@ else
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Tobot/README.md](Tobot/README.md) | Demo application guide |
-| [Tobot/QUICKSTART.md](Tobot/QUICKSTART.md) | 5-minute setup |
-| [Tobot.Device/ExplorerHat/README.md](Tobot.Device/ExplorerHat/README.md) | API reference |
-| [Tobot.Device/ExplorerHat/FILE_STRUCTURE.md](Tobot.Device/ExplorerHat/FILE_STRUCTURE.md) | File organization |
-| [Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md](Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md) | Package guide |
+| Document                                                                                             | Description            |
+| ---------------------------------------------------------------------------------------------------- | ---------------------- |
+| [Tobot/README.md](Tobot/README.md)                                                                   | Demo application guide |
+| [Tobot/QUICKSTART.md](Tobot/QUICKSTART.md)                                                           | 5-minute setup         |
+| [Tobot.Device/ExplorerHat/README.md](Tobot.Device/ExplorerHat/README.md)                             | API reference          |
+| [Tobot.Device/ExplorerHat/FILE_STRUCTURE.md](Tobot.Device/ExplorerHat/FILE_STRUCTURE.md)             | File organization      |
+| [Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md](Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md) | Package guide          |
 
 ---
 
@@ -466,14 +476,14 @@ All demos in `Tobot/Program.cs` are fully commented and ready to modify. Each ex
 
 ### Explorer HAT Features
 
-| Feature | Quantity | Specifications |
-|---------|----------|----------------|
-| **Digital Inputs** | 4 | 5V tolerant, buffered |
-| **Digital Outputs** | 4 | 500mA sink-to-ground |
-| **Analog Inputs** | 4 | 0-5V, 12-bit ADC (ADS1015) |
-| **Motor Drivers** | 2 | H-bridge, PWM capable |
-| **Onboard LEDs** | 4 | Status indicators |
-| **Touch Sensors** | 8 | Capacitive (CAP1208) |
+| Feature             | Quantity | Specifications             |
+| ------------------- | -------- | -------------------------- |
+| **Digital Inputs**  | 4        | 5V tolerant, buffered      |
+| **Digital Outputs** | 4        | 500mA sink-to-ground       |
+| **Analog Inputs**   | 4        | 0-5V, 12-bit ADC (ADS1015) |
+| **Motor Drivers**   | 2        | H-bridge, PWM capable      |
+| **Onboard LEDs**    | 4        | Status indicators          |
+| **Touch Sensors**   | 8        | Capacitive (CAP1208)       |
 
 ### Pin Mapping
 
