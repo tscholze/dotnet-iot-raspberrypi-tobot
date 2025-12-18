@@ -17,6 +17,10 @@
 			<span class="label">Distance</span>
 			<span class="value">@DistanceText</span>
 		</div>
+		<div class="@($"status-pill {(IsConnected ? "ok" : "danger")}")">
+			<span class="label">Hub</span>
+			<span class="value">@(IsConnected ? "Connected" : "Disconnected")</span>
+		</div>
 	</div>
 
 	<div class="controls-card">
@@ -37,9 +41,11 @@
 	private HubConnection? _hubConnection;
 	private double? _distanceCm;
 	private const double DangerThresholdCm = 15.0;
+	private bool _isConnected;
 
 	private string DistanceText => _distanceCm.HasValue ? $"{_distanceCm.Value:F1} cm" : "--";
 	private bool IsTooClose => _distanceCm.HasValue && _distanceCm.Value < DangerThresholdCm;
+	private bool IsConnected => _isConnected;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -57,10 +63,12 @@
 		try
 		{
 			await _hubConnection.StartAsync().ConfigureAwait(false);
+			_isConnected = true;
 		}
 		catch
 		{
 			_distanceCm = null;
+			_isConnected = false;
 		}
 	}
 
@@ -101,6 +109,13 @@
 }
 
 <style>
+	html, body {
+		margin: 0;
+		padding: 0;
+		min-height: 100%;
+		background: #05060a;
+	}
+
 	:root {
 		--bg: #05060a;
 		--panel: #0f1118;
@@ -135,6 +150,10 @@
 		overflow: hidden;
 	}
 
+	.controls-card {
+		width: min(1200px, 95vw);
+	}
+
 	.video-header,
 	.controls-header {
 		padding: 14px 18px;
@@ -165,7 +184,9 @@
 	.status-row {
 		width: min(1200px, 95vw);
 		display: flex;
-		justify-content: flex-start;
+		justify-content: center;
+		align-items: center;
+		gap: 12px;
 	}
 
 	.status-pill {
