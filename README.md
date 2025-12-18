@@ -29,9 +29,20 @@
 
 ## How it looks
 
+### Tobot
 <div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
     <img src="_docs/bot-1.jpeg" alt="Tobot robot build" height="260" />
+    <img src="_docs/bot-2.jpeg" alt="Frame front" height="260" />
+    <img src="_docs/bot-3.jpeg" alt="Frame back" height="260" />
+</div>
+
+### Tobot.Web
+<div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
     <img src="_docs/web-home-1.png" alt="Web remote home screen" height="260" />
+</div>
+
+### Tobo.PicoRemote
+<div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
     <img src="_docs/pico-remote-1.jpeg" alt="Pico remote handheld controller" height="260" />
 </div>
 
