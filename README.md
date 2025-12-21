@@ -13,7 +13,11 @@
 
 ## ? What is Tobot?
 
-**Tobot** is a complete .NET robotics platform that brings the power of modern C# to the Raspberry Pi and the beloved Pimoroni Explorer HAT. At the heart of the solution is the `TobotController`, a single high-level entry point that orchestrates every hat, sensor, and peripheral so your apps never need to juggle individual drivers. Whether you're building your first robot, teaching programming, or creating a sophisticated autonomous system, Tobot provides everything you need in a clean, intuitive API.
+**Tobot** is a complete .NET robotics platform combining custom 3D-printed hardware with professional-grade software to create a powerful, extensible robot built for the future. Based on a collection of exceptional **Pimoroni** components (Explorer HAT Pro, Pan-Tilt HAT, Stack HAT, Blinkt!, and more), Tobot features a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers.
+
+At its core, Tobot is designed to run on **two Raspberry Pi boards** working in tandem—providing ample compute power for computer vision, machine learning, autonomous navigation, and real-time control. One Pi handles hardware interfacing and motor control, while the second can focus on AI workloads, web services, or video processing.
+
+The software stack centers around the `TobotController`, a unified C# API that orchestrates every sensor, motor, LED, and servo. Whether you're building your first robot, teaching programming, experimenting with edge AI, or creating a sophisticated autonomous system, Tobot provides everything you need in a clean, scalable, and well-documented platform.
 
 ### ✨ Why Tobot?
 
@@ -45,6 +49,88 @@
 <div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
     <img src="_docs/pico-remote-1.jpeg" alt="Pico remote handheld controller" height="260" />
 </div>
+
+### CAD constructions
+<div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <img src="_docs/cad-1.png" alt="CAD of the chassis" height="260" />
+    <img src="_docs/cad-2.png" alt="CAD of the remote" height="260" />
+</div>
+---
+
+## What Tobot is Based On
+
+### 🏗️ Chassis
+
+The Tobot chassis is **fully custom designed** and optimized for accessibility and ease of manufacturing. All parts are specifically engineered to fit on **small 3D printers** like the **BambuLab A1 mini**, making it possible to build your own robot without needing industrial-scale equipment.
+
+**Key Features:**
+- Optimized for compact bed sizes (180×180mm print area)
+- Uses standard **PLA filament** - no exotic materials needed
+- Compatible with eco-friendly filament from [Recycling Fabrik](https://www.recyclingfabrik.com/) or [BambuLab](https://bambulab.com/)
+- Modular design for easy assembly and modifications
+- All STL files available in the repository for customization
+
+Whether you're a hobbyist with a small printer or an educator setting up a classroom fleet, the Tobot chassis is designed to be practical, affordable, and sustainable.
+
+---
+
+### 🔧 Hardware
+
+Tobot's hardware foundation is built on exceptional components from the amazing team at [**Pimoroni**](https://shop.pimoroni.com/), a company renowned for their creativity, quality, and maker-friendly products.
+
+**Core Components:**
+
+| Component                                                                                                                            | Description                                                           | Shop Link                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **[Explorer HAT Pro](https://shop.pimoroni.com/products/explorer-hat)**                                                              | Motor drivers, LEDs, analog inputs, digital I/O, and capacitive touch | [Buy Now](https://shop.pimoroni.com/products/explorer-hat)                                                                |
+| **[pHAT Stack HAT](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC)** | Stacking connector for adding multiple HATs                           | [Buy Now](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC) |
+| **[Pan-Tilt HAT](https://shop.pimoroni.com/products/pan-tilt-hat)**                                                                  | Servo-driven camera mount for dynamic viewing                         | [Buy Now](https://shop.pimoroni.com/products/pan-tilt-hat)                                                                |
+| **[Blinkt!](https://shop.pimoroni.com/products/blinkt)**                                                                             | 8 RGB LED strip for visual feedback                                   | [Buy Now](https://shop.pimoroni.com/products/blinkt)                                                                      |
+
+**Additional Components:**
+- HC-SR04 ultrasonic distance sensor
+- Standard jumper wires for flexible connections
+- Raspberry Pi (any 40-pin GPIO model)
+- 5V power supply (adequate for servos and motors)
+
+**Current Setup:**  
+The prototype uses **jumper wires** to connect components, providing flexibility during development and easy debugging. Future iterations may include custom PCBs or ribbon cable solutions for cleaner integration.
+
+**Why Pimoroni?**  
+Pimoroni's products are thoughtfully designed, thoroughly documented, and backed by an active community. Their commitment to open-source hardware and education aligns perfectly with Tobot's mission.
+
+---
+
+### 💻 Software
+
+Tobot is built entirely on the **modern .NET ecosystem**, leveraging cutting-edge frameworks and libraries to deliver a professional, maintainable, and powerful robotics platform.
+
+**Technology Stack:**
+
+| Layer                       | Technology                 | Purpose                                      |
+| --------------------------- | -------------------------- | -------------------------------------------- |
+| **Framework**               | .NET 10                    | Modern runtime with C# 13 language features  |
+| **Web UI**                  | ASP.NET Core Blazor        | Interactive, real-time web interface         |
+| **Real-time Communication** | SignalR                    | Bidirectional communication for live updates |
+| **Hardware Access**         | System.Device.Gpio NuGet   | Low-level GPIO, I2C, PWM control             |
+| **Operating System**        | Raspberry Pi OS (Bookworm) | Official, stock Raspberry Pi distribution    |
+
+**Why .NET?**
+- **Cross-platform**: Runs natively on ARM-based Raspberry Pi
+- **Performance**: Compiled code with optimized memory management
+- **Tooling**: World-class IDEs (Visual Studio, VS Code) with IntelliSense and debugging
+- **Modern Language**: C# 13 with pattern matching, async/await, and strong typing
+- **Ecosystem**: NuGet package ecosystem with thousands of libraries
+- **Long-term Support**: Microsoft's commitment to .NET on IoT
+
+**Architecture Highlights:**
+- **Unified Controller**: `TobotController` abstracts all hardware complexity
+- **Package-based Organization**: Clean separation of concerns by functionality
+- **XML Documentation**: Every public API is fully documented
+- **Async/Await**: Non-blocking operations for responsive control
+- **Resource Safety**: Proper disposal patterns throughout
+
+No custom kernel modules, no modified OS images - just standard Raspberry Pi OS with .NET SDK installed. This makes Tobot easy to set up, maintain, and extend.
 
 ---
 
