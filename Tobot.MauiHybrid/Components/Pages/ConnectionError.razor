@@ -1,0 +1,22 @@
+@page "/error"
+
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
+    <h1 style="color: #d32f2f; margin-bottom: 20px;">?? Connection Error</h1>
+    <p style="font-size: 18px; margin-bottom: 30px;">
+        Unable to connect to the server at <strong>http://pi41:5824/app</strong>
+    </p>
+    <button @onclick="RetryConnection" 
+            style="padding: 12px 24px; font-size: 16px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Retry Connection
+    </button>
+</div>
+
+@code {
+    [Inject]
+    private NavigationManager? NavigationManager { get; set; }
+
+    private void RetryConnection()
+    {
+        NavigationManager?.NavigateTo("/", forceLoad: true);
+    }
+}

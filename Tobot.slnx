@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Tobot.Device/Tobot.Device.csproj" />
+  <Project Path="Tobot.MauiHybrid/Tobot.MauiHybrid.csproj" Id="87ec8192-dee0-430a-84bd-23a9a67ee056" />
   <Project Path="Tobot.Web/Tobot.Web.csproj" />
   <Project Path="Tobot/Tobot.csproj" />
 </Solution>
