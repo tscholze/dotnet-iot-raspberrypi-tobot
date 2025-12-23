@@ -5,10 +5,11 @@
 
 @if (isLoading)
 {
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh;">
-        <div style="text-align: center;">
+    <div class="loading-container">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
             <h2>Checking connection...</h2>
-            <p>Please wait</p>
+            <p class="loading-text">Connecting to Tobot</p>
         </div>
     </div>
 }
@@ -35,3 +36,71 @@ else if (isConnected)
         }
     }
 }
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :root {
+        --bg: #05060a;
+        --panel: #0f1118;
+        --accent: #38ef7d;
+        --accent-2: #30cfd0;
+        --text: #e8ecf1;
+        --muted: #9aa4b5;
+    }
+
+    .loading-container {
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle at 10% 20%, #0d1324, #05060a 45%),
+                    radial-gradient(circle at 90% 10%, #0f1b2f, #05060a 40%),
+                    #05060a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text);
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    .loading-content {
+        text-align: center;
+        padding: 40px;
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(56, 239, 125, 0.2);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 30px;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-content h2 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .loading-text {
+        color: var(--muted);
+        font-size: 16px;
+    }
+</style>

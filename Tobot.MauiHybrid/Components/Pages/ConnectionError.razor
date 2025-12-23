@@ -1,14 +1,17 @@
 @page "/error"
 
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
-    <h1 style="color: #d32f2f; margin-bottom: 20px;">?? Connection Error</h1>
-    <p style="font-size: 18px; margin-bottom: 30px;">
-        Unable to connect to the server at <strong>http://pi41:5824/app</strong>
-    </p>
-    <button @onclick="RetryConnection" 
-            style="padding: 12px 24px; font-size: 16px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Retry Connection
-    </button>
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-icon">??</div>
+        <h1>Connection Error</h1>
+        <p class="error-message">
+            Unable to connect to the server at<br />
+            <strong>http://pi41:5824/app</strong>
+        </p>
+        <button @onclick="RetryConnection" class="retry-btn">
+            <span class="btn-text">? Retry Connection</span>
+        </button>
+    </div>
 </div>
 
 @code {
@@ -20,3 +23,106 @@
         NavigationManager?.NavigateTo("/", forceLoad: true);
     }
 }
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :root {
+        --bg: #05060a;
+        --panel: #0f1118;
+        --accent: #38ef7d;
+        --accent-2: #30cfd0;
+        --text: #e8ecf1;
+        --muted: #9aa4b5;
+        --danger: #ff4d4f;
+    }
+
+    .error-container {
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle at 10% 20%, #0d1324, #05060a 45%),
+                    radial-gradient(circle at 90% 10%, #0f1b2f, #05060a 40%),
+                    #05060a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text);
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    .error-content {
+        text-align: center;
+        padding: 48px 40px;
+        background: var(--panel);
+        border: 1px solid rgba(255, 77, 79, 0.2);
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45),
+                    0 0 40px rgba(255, 77, 79, 0.1);
+        max-width: 500px;
+    }
+
+    .error-icon {
+        font-size: 72px;
+        margin-bottom: 24px;
+        filter: drop-shadow(0 0 20px rgba(255, 77, 79, 0.3));
+    }
+
+    .error-content h1 {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: var(--danger);
+        text-shadow: 0 0 20px rgba(255, 77, 79, 0.3);
+    }
+
+    .error-message {
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 32px;
+    }
+
+    .error-message strong {
+        color: var(--text);
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 15px;
+        background: rgba(56, 239, 125, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-top: 8px;
+    }
+
+    .retry-btn {
+        padding: 14px 32px;
+        font-size: 16px;
+        font-weight: 500;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #05060a;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(56, 239, 125, 0.3);
+        font-family: inherit;
+    }
+
+    .retry-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 30px rgba(56, 239, 125, 0.4);
+    }
+
+    .retry-btn:active {
+        transform: translateY(0);
+    }
+
+    .btn-text {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
