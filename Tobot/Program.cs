@@ -1,5 +1,7 @@
 ﻿using System.Device.Gpio;
+using System.Threading;
 using Tobot.Device;
+using Tobot.Pi;
 
 namespace Tobot;
 
@@ -53,9 +55,10 @@ class Program
             Console.WriteLine("│  12. Random Drive Demo       - Autonomous obstacle avoid │");
             Console.WriteLine("│  13. Directed Detection      - Find object direction     │");
             Console.WriteLine("│  14. Direction Classifier    - Simple direction labeling │");
+            Console.WriteLine("│  15. Pi System Info          - Host/IP/CPU temp          │");
             Console.WriteLine("│  0. Exit                                                 │");
             Console.WriteLine("└──────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-14): ");
+            Console.Write("\nEnter your choice (0-15): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -104,11 +107,14 @@ class Program
                 case "14":
                     RunDirectionClassifierDemo(controller);
                     break;
+                case "15":
+                    RunPiSystemInfoDemo();
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-14.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-15.");
                     break;
             }
 
@@ -169,9 +175,14 @@ class Program
             case "direction":
                 RunDirectionClassifierDemo(controller);
                 break;
+            case "pi":
+            case "sysinfo":
+            case "systeminfo":
+                RunPiSystemInfoDemo();
+                break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection, classifier");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection, classifier, pi");
                 break;
         }
     }
@@ -1034,5 +1045,66 @@ class Program
         {
             Console.WriteLine($"❌ Error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Displays Raspberry Pi system information such as hostname, IP addresses, and CPU temperature.
+    /// Also demonstrates the temperature change publishing event (>=2°C change, polled every 5 seconds).
+    /// </summary>
+    static void RunPiSystemInfoDemo()
+    {
+        Console.WriteLine("🖥️  Pi System Info");
+        Console.WriteLine("═══════════════════════════════════════");
+
+        // Hostname
+        string host = PiSystemInfo.GetHostName();
+        Console.WriteLine($"Hostname: {host}");
+
+        // IP addresses
+        var ipv4 = PiSystemInfo.GetIpAddresses(includeIPv6: false);
+        if (ipv4.Count == 0)
+        {
+            Console.WriteLine("IPv4: (none)");
+        }
+        else
+        {
+            Console.WriteLine("IPv4:");
+            foreach (var ip in ipv4)
+            {
+                Console.WriteLine($"  - {ip}");
+            }
+        }
+
+        // CPU temperature
+        int? tempRounded = PiSystemInfo.GetCpuTemperatureCelsiusRounded();
+        if (tempRounded.HasValue)
+        {
+            Console.WriteLine($"CPU Temp: {tempRounded.Value}°C (rounded)");
+        }
+        else
+        {
+            Console.WriteLine("CPU Temp: unavailable");
+        }
+
+        Console.WriteLine("\nMonitoring CPU temp changes (>=2°C). Press any key to stop...\n");
+
+        void OnTempChanged(object? sender, int tempC)
+        {
+            string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            Console.WriteLine($"[{timestamp}] CPU Temp: {tempC}°C");
+        }
+
+        // Subscribe and start publishing
+        PiSystemInfo.TemperatureChanged += OnTempChanged;
+        PiSystemInfo.StartTemperaturePublishing();
+
+        // Wait for key press
+        Console.ReadKey(intercept: true);
+
+        // Cleanup
+        PiSystemInfo.StopTemperaturePublishing();
+        PiSystemInfo.TemperatureChanged -= OnTempChanged;
+
+        Console.WriteLine("\n✅ Pi system info demo complete!");
     }
 }
