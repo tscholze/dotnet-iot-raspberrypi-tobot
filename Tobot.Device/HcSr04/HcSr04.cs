@@ -234,7 +234,7 @@ public sealed class HcSr04Sensor : IDisposable
 			return ObjectDirection.Center;
 		}
 
-		return panAngleDegrees < 0 ? ObjectDirection.Left : ObjectDirection.Right;
+		return panAngleDegrees < 0 ? ObjectDirection.Right : ObjectDirection.Left;
 	}
 
 	/// <summary>

@@ -217,28 +217,62 @@ Notes:
 
 #### 📐 HC-SR04 Ultrasonic Distance
 
-`TobotController` also wraps the HC-SR04 ultrasonic range finder via the `HcSr04Sensor` manager.
+`TobotController` wraps the HC-SR04 ultrasonic range finder via the `HcSr04Sensor` manager, providing both basic distance measurement and advanced directed object detection.
 
+**Basic Distance Reading:**
 - Call `TryReadDistance` for non-throwing reads or `ReadDistance` to enforce a measurement
 - Adjustable sample count for noise reduction (defaults to 5 readings)
 - Shares the controller's GPIO instance so trigger/echo pins are automatically managed
 
-Example:
+**Directed Object Detection:**
+The HC-SR04 sensor can determine if an object is to the left, center, or right when combined with the Pan-Tilt HAT. Two approaches are supported:
+
+1. **Autonomous Sweep Detection** (`FindClosestObject`) - The sensor actively sweeps left to right (-45° to +45°) and reports the closest object's direction
+2. **Direction Classification** (`GetObjectDirection`) - Lightweight direction labeling based on current pan angle without sweeping (use when pan is controlled externally)
+
+Example - Autonomous Detection:
 
 ```csharp
 using Tobot.Device;
 
 using var controller = new TobotController();
 
-if (controller.TryReadDistance(out double distanceCm))
+var detectedObject = controller.FindClosestObject();
+if (detectedObject != null)
 {
-    Console.WriteLine($"Distance: {distanceCm:F1} cm");
-}
-else
-{
-    Console.WriteLine("Out of range or no echo detected.");
+    Console.WriteLine($"Distance: {detectedObject.Distance:F1} cm");
+    Console.WriteLine($"Direction: {detectedObject.Direction}"); // Left, Center, or Right
+    Console.WriteLine($"Pan angle: {detectedObject.PanAngle}°");
 }
 ```
+
+Example - Simple Direction Classification:
+
+```csharp
+using Tobot.Device;
+
+using var controller = new TobotController();
+
+// Position pan manually (your control logic)
+controller.SetPanAngle(-30);
+Thread.Sleep(500);
+
+// Read distance and get direction classification
+if (controller.TryReadDistanceWithDirection(-30, out double distanceCm, out var direction))
+{
+    Console.WriteLine($"Distance: {distanceCm:F1} cm");
+    Console.WriteLine($"Direction: {direction}"); // Left, Center, or Right
+}
+
+// Or just get direction without distance reading
+var objectDirection = controller.GetObjectDirection(-30);
+Console.WriteLine($"Object is to the {objectDirection}");
+```
+
+**Direction Classification:**
+- **Left**: Pan angle < -5°
+- **Center**: Pan angle between -5° and +5°
+- **Right**: Pan angle > +5°
 
 ### 🎮 Tobot Console Application
 
@@ -252,6 +286,12 @@ An interactive showcase featuring:
 - **Touch Demo** - Capacitive touch detection
 - **Robot System** - Complete autonomous control
 - **System Check** - Hardware diagnostics
+- **Pan-Tilt Demo** - Servo movement showcase
+- **HC-SR04 Distance** - Ultrasonic range finding
+- **Observable Distance** - Reactive sensor monitoring
+- **Random Drive** - Autonomous obstacle avoidance
+- **Directed Detection** - Autonomous object localization with direction
+- **Direction Classifier** - Manual pan with direction classification
 
 ### 🌐 Tobot.Web Application
 
@@ -505,6 +545,8 @@ byte allSensors = controller.ReadTouchState();
 ```
 
 ### 📐 Ultrasonic Distance (HC-SR04)
+
+Basic distance measurement:
 ```csharp
 if (controller.TryReadDistance(out double distanceCm, samples: 5))
 {
@@ -514,6 +556,30 @@ else
 {
     Console.WriteLine("Measurement failed");
 }
+```
+
+Directed object detection (with Pan-Tilt HAT):
+```csharp
+// Option 1: Autonomous sweep - finds closest object and its direction
+var detected = controller.FindClosestObject();
+if (detected != null)
+{
+    Console.WriteLine($"Closest object: {detected.Distance:F1} cm");
+    Console.WriteLine($"Direction: {detected.Direction}"); // Left, Center, or Right
+}
+
+// Option 2: Simple direction classification
+// (use when pan is controlled externally)
+controller.SetPanAngle(-30);
+Thread.Sleep(500);
+
+if (controller.TryReadDistanceWithDirection(-30, out double distance, out var direction))
+{
+    Console.WriteLine($"Object at {distance:F1} cm to the {direction}");
+}
+
+// Or just classify direction without distance reading
+var dir = controller.GetObjectDirection(-30); // Left, Center, or Right
 ```
 
 ---
