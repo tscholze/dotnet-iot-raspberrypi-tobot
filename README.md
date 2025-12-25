@@ -114,6 +114,7 @@ Tobot is built entirely on the **modern .NET ecosystem**, leveraging cutting-edg
 | **Real-time Communication** | SignalR                    | Bidirectional communication for live updates |
 | **Hardware Access**         | System.Device.Gpio NuGet   | Low-level GPIO, I2C, PWM control             |
 | **Operating System**        | Raspberry Pi OS (Bookworm) | Official, stock Raspberry Pi distribution    |
+| **System Telemetry**        | Tobot.Pi                   | Hostname, Wi‑Fi SSID/IP, temp, load, mem, disk, uptime, freq |
 
 **Why .NET?**
 - **Cross-platform**: Runs natively on ARM-based Raspberry Pi
@@ -292,6 +293,7 @@ An interactive showcase featuring:
 - **Random Drive** - Autonomous obstacle avoidance
 - **Directed Detection** - Autonomous object localization with direction
 - **Direction Classifier** - Manual pan with direction classification
+- **Pi System Info** - Hostname, Wi‑Fi SSID/IP, CPU temp, load, memory, disk, uptime, CPU freq
 
 ### 🌐 Tobot.Web Application
 
@@ -379,6 +381,40 @@ echo "PASSWORD = 'your-wifi-password'" >> Tobot.PicoRemote/secret.py
 ```
 
 Note: Update `REMOTE_HOST` and `REMOTE_PORT` in `remote-control.py` to match your Tobot.Web deployment.
+
+---
+
+### 🖥️ Pi System Info
+
+The `Tobot.Pi` library exposes Raspberry Pi telemetry via `PiSystemInfo` and publishes periodic `PiStatusSnapshot` updates.
+
+Highlights:
+- Hostname and Wi‑Fi details: SSID + primary Wi‑Fi IPv4
+- CPU metrics: temperature (°C rounded) and frequency (MHz)
+- Load averages: 1/5/15 minutes
+- Memory: total/available (kB) with easy MB display in demo
+- Disk: total/free in GiB (root mount)
+- Uptime: seconds (rendered as days/hours/minutes in demo)
+- Events: `TemperatureChanged` (thresholded) and `StatusChanged` (full snapshot)
+
+Quick usage:
+
+```csharp
+using Tobot.Pi;
+
+// One-shot reads
+Console.WriteLine($"Host: {PiSystemInfo.GetHostName()}");
+Console.WriteLine($"Wi‑Fi SSID: {PiSystemInfo.GetWifiSsid() ?? "(not connected)"}");
+var wifiIps = PiSystemInfo.GetIpAddresses(includeIPv6: false, wifiOnly: true);
+Console.WriteLine($"Wi‑Fi IP: {(wifiIps.Count > 0 ? wifiIps[0].ToString() : "(none)")}");
+
+// Subscribe to periodic snapshots (includes load/mem/disk/uptime/freq)
+PiSystemInfo.StatusChanged += (s, snap) =>
+{
+    Console.WriteLine($"Temp {snap.CpuTempC}°C | Load {snap.LoadAvg1Minute:F2}/{snap.LoadAvg5Minutes:F2}/{snap.LoadAvg15Minutes:F2} | Free {snap.DiskFreeGiB:F1} GiB");
+};
+PiSystemInfo.StartTemperaturePublishing();
+```
 
 ---
 
@@ -478,6 +514,10 @@ Tobot/
 │           ├── Simple.razor           Styled control interface
 │           ├── Remote.razor           URL-triggered control interface
 │           └── Bot.razor              Animated reactive eyes
+│
+├── Tobot.Pi/                          Raspberry Pi system telemetry library
+│   ├── PiSystemInfo.cs                Host/IP (Wi‑Fi), SSID, CPU temp, load avg, memory, disk (GiB), uptime, CPU freq
+│   └── PiStatusSnapshot.cs            DTO for periodic status snapshots + events
 │
 └── Tobot.PicoRemote/                  Pico W wireless remote firmware
     ├── remote-control.py              Main firmware (MicroPython)
