@@ -1048,8 +1048,9 @@ class Program
     }
 
     /// <summary>
-    /// Displays Raspberry Pi system information such as hostname, IP addresses, and CPU temperature.
-    /// Also demonstrates the temperature change publishing event (>=2°C change, polled every 5 seconds).
+    /// Displays Raspberry Pi system information including hostname, Wi-Fi network, IP address,
+    /// CPU temperature, load averages, memory, disk space, uptime, and CPU frequency.
+    /// Also demonstrates status snapshot publishing (polled every 5 seconds).
     /// </summary>
     static void RunPiSystemInfoDemo()
     {
@@ -1060,42 +1061,87 @@ class Program
         string host = PiSystemInfo.GetHostName();
         Console.WriteLine($"Hostname: {host}");
 
-        // IP addresses
-        var ipv4 = PiSystemInfo.GetIpAddresses(includeIPv6: false);
-        if (ipv4.Count == 0)
+        // Wi-Fi SSID
+        string? ssid = PiSystemInfo.GetWifiSsid();
+        Console.WriteLine($"Wi-Fi Network: {ssid ?? "(not connected)"}");
+
+        // Wi-Fi IP address
+        var wifiAddresses = PiSystemInfo.GetIpAddresses(includeIPv6: false, wifiOnly: true);
+        if (wifiAddresses.Count == 0)
         {
-            Console.WriteLine("IPv4: (none)");
+            Console.WriteLine("Wi-Fi IP: (none)");
         }
         else
         {
-            Console.WriteLine("IPv4:");
-            foreach (var ip in ipv4)
-            {
-                Console.WriteLine($"  - {ip}");
-            }
+            Console.WriteLine($"Wi-Fi IP: {wifiAddresses[0]}");
         }
 
         // CPU temperature
         int? tempRounded = PiSystemInfo.GetCpuTemperatureCelsiusRounded();
         if (tempRounded.HasValue)
         {
-            Console.WriteLine($"CPU Temp: {tempRounded.Value}°C (rounded)");
+            Console.WriteLine($"CPU Temp: {tempRounded.Value}°C");
         }
         else
         {
             Console.WriteLine("CPU Temp: unavailable");
         }
 
-        Console.WriteLine("\nMonitoring CPU temp changes (>=2°C). Press any key to stop...\n");
+        // Load averages
+        double? load1 = PiSystemInfo.ReadLoadAverage(0);
+        double? load5 = PiSystemInfo.ReadLoadAverage(1);
+        double? load15 = PiSystemInfo.ReadLoadAverage(2);
+        Console.WriteLine($"Load Avg: {load1?.ToString("F2") ?? "?"} / {load5?.ToString("F2") ?? "?"} / {load15?.ToString("F2") ?? "?"} (1/5/15 min)");
 
-        void OnTempChanged(object? sender, int tempC)
+        // Memory
+        long? memTotal = PiSystemInfo.ReadMemInfo("MemTotal");
+        long? memAvail = PiSystemInfo.ReadMemInfo("MemAvailable");
+        if (memTotal.HasValue && memAvail.HasValue)
         {
-            string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-            Console.WriteLine($"[{timestamp}] CPU Temp: {tempC}°C");
+            double memUsedMB = (memTotal.Value - memAvail.Value) / 1024.0;
+            double memTotalMB = memTotal.Value / 1024.0;
+            Console.WriteLine($"Memory: {memUsedMB:F0} MB used / {memTotalMB:F0} MB total");
+        }
+
+        // Disk
+        long? diskTotal = PiSystemInfo.ReadDiskTotalBytes("/");
+        long? diskFree = PiSystemInfo.ReadDiskFreeBytes("/");
+        if (diskTotal.HasValue && diskFree.HasValue)
+        {
+            double totalGiB = diskTotal.Value / (1024.0 * 1024 * 1024);
+            double freeGiB = diskFree.Value / (1024.0 * 1024 * 1024);
+            double usedGiB = totalGiB - freeGiB;
+            Console.WriteLine($"Disk: {usedGiB:F1} GiB used / {totalGiB:F1} GiB total ({freeGiB:F1} GiB free)");
+        }
+
+        // Uptime
+        double? uptime = PiSystemInfo.ReadUptimeSeconds();
+        if (uptime.HasValue)
+        {
+            TimeSpan ts = TimeSpan.FromSeconds(uptime.Value);
+            Console.WriteLine($"Uptime: {ts.Days}d {ts.Hours}h {ts.Minutes}m");
+        }
+
+        // CPU frequency
+        int? cpuFreq = PiSystemInfo.ReadCpuFreqMHz();
+        if (cpuFreq.HasValue)
+        {
+            Console.WriteLine($"CPU Freq: {cpuFreq.Value} MHz");
+        }
+
+        Console.WriteLine("\nMonitoring status snapshots (every 5s). Press any key to stop...\n");
+
+        void OnStatusChanged(object? sender, PiStatusSnapshot snapshot)
+        {
+            string timestamp = DateTime.Now.ToString("HH:mm:ss");
+            Console.WriteLine($"[{timestamp}] Status Update:");
+            Console.WriteLine($"  {snapshot.WifiSsid ?? "(no wifi)"} | {snapshot.IpAddresses?.ToString() ?? "(no IP)"}");
+            Console.WriteLine($"  Temp: {snapshot.CpuTempC?.ToString() ?? "?"}°C | Load: {snapshot.LoadAvg1Minute?.ToString("F2") ?? "?"} | Freq: {snapshot.CpuFreqMHz?.ToString() ?? "?"}MHz");
+            Console.WriteLine($"  Disk: {snapshot.DiskFreeGiB?.ToString("F1") ?? "?"}GiB free");
         }
 
         // Subscribe and start publishing
-        PiSystemInfo.TemperatureChanged += OnTempChanged;
+        PiSystemInfo.StatusChanged += OnStatusChanged;
         PiSystemInfo.StartTemperaturePublishing();
 
         // Wait for key press
@@ -1103,7 +1149,7 @@ class Program
 
         // Cleanup
         PiSystemInfo.StopTemperaturePublishing();
-        PiSystemInfo.TemperatureChanged -= OnTempChanged;
+        PiSystemInfo.StatusChanged -= OnStatusChanged;
 
         Console.WriteLine("\n✅ Pi system info demo complete!");
     }

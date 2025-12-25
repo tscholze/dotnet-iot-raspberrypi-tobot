@@ -1,4 +1,8 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
@@ -21,10 +25,20 @@ public static class PiSystemInfo
 	private static double? _lastPublishedTemperature;
 
 	/// <summary>
+	/// Latest published status snapshot.
+	/// </summary>
+	private static PiStatusSnapshot? _lastStatus;
+
+	/// <summary>
 	/// Raised when the CPU temperature changes by at least the configured threshold during publishing.
 	/// Payload is the rounded temperature in Celsius.
 	/// </summary>
 	public static event EventHandler<int>? TemperatureChanged;
+
+	/// <summary>
+	/// Raised on each poll with a full system status snapshot.
+	/// </summary>
+	public static event EventHandler<PiStatusSnapshot>? StatusChanged;
 
 	/// <summary>
 	/// Gets the current host name of the device.
@@ -32,16 +46,65 @@ public static class PiSystemInfo
 	public static string GetHostName() => Dns.GetHostName();
 
 	/// <summary>
-	/// Gets all non-loopback IP addresses for the device.
+	/// Gets the connected Wi-Fi network SSID.
+	/// Returns null if not connected to Wi-Fi or unable to determine.
+	/// </summary>
+	public static string? GetWifiSsid()
+	{
+		try
+		{
+			// Find active wireless interface
+			foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+			{
+				if (ni.OperationalStatus != OperationalStatus.Up)
+				{
+					continue;
+				}
+
+				bool isWifi = ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.Name.Contains("wlan", StringComparison.OrdinalIgnoreCase);
+				if (!isWifi)
+				{
+					continue;
+				}
+
+				// Try to read SSID from sysfs for this interface
+				string ssidPath = $"/sys/class/net/{ni.Name}/wireless/ssid";
+				if (File.Exists(ssidPath))
+				{
+					string ssid = File.ReadAllText(ssidPath).Trim();
+					if (!string.IsNullOrEmpty(ssid))
+					{
+						return ssid;
+					}
+				}
+			}
+		}
+		catch
+		{
+			// ignore
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Gets non-loopback IP addresses for the device.
 	/// </summary>
 	/// <param name="includeIPv6">When true, includes IPv6 addresses; otherwise IPv4 only.</param>
-	public static IReadOnlyList<IPAddress> GetIpAddresses(bool includeIPv6 = false)
+	/// <param name="wifiOnly">When true, returns only addresses from wireless interfaces.</param>
+	public static IReadOnlyList<IPAddress> GetIpAddresses(bool includeIPv6 = false, bool wifiOnly = false)
 	{
 		var results = new List<IPAddress>();
 
 		foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
 		{
 			if (ni.OperationalStatus != OperationalStatus.Up)
+			{
+				continue;
+			}
+
+			bool isWifi = ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.Name.Contains("wlan", StringComparison.OrdinalIgnoreCase);
+			if (wifiOnly && !isWifi)
 			{
 				continue;
 			}
@@ -105,6 +168,170 @@ public static class PiSystemInfo
 	}
 
 	/// <summary>
+	/// Reads the 1/5/15 minute load averages from /proc/loadavg by index (0,1,2).
+	/// Returns null when unavailable or parse fails.
+	/// </summary>
+	/// <param name="index">0 for 1-minute, 1 for 5-minute, 2 for 15-minute average.</param>
+	public static double? ReadLoadAverage(int index)
+	{
+		try
+		{
+			string path = "/proc/loadavg";
+			if (!File.Exists(path))
+			{
+				return null;
+			}
+
+			string content = File.ReadAllText(path).Trim();
+			string[] parts = content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			if (index < 0 || index >= 3 || parts.Length < 3)
+			{
+				return null;
+			}
+
+			if (double.TryParse(parts[index], NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+			{
+				return value;
+			}
+		}
+		catch
+		{
+			// ignore
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Reads a memory info value in kB from /proc/meminfo by key, e.g., MemTotal or MemAvailable.
+	/// Returns null when unavailable or parse fails.
+	/// </summary>
+	public static long? ReadMemInfo(string key)
+	{
+		try
+		{
+			string path = "/proc/meminfo";
+			if (!File.Exists(path))
+			{
+				return null;
+			}
+
+			foreach (string line in File.ReadLines(path))
+			{
+				if (!line.StartsWith(key, StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				if (parts.Length >= 2 && long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out long kb))
+				{
+					return kb;
+				}
+			}
+		}
+		catch
+		{
+			// ignore
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Reads system uptime in seconds from /proc/uptime.
+	/// Returns null when unavailable or parse fails.
+	/// </summary>
+	public static double? ReadUptimeSeconds()
+	{
+		try
+		{
+			string path = "/proc/uptime";
+			if (!File.Exists(path))
+			{
+				return null;
+			}
+
+			string content = File.ReadAllText(path).Trim();
+			string[] parts = content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length == 0)
+			{
+				return null;
+			}
+
+			if (double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds))
+			{
+				return seconds;
+			}
+		}
+		catch
+		{
+			// ignore
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Reads current CPU frequency in MHz from scaling_cur_freq (cpu0). Returns null when unavailable.
+	/// </summary>
+	public static int? ReadCpuFreqMHz()
+	{
+		try
+		{
+			const string path = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
+			if (!File.Exists(path))
+			{
+				return null;
+			}
+
+			string raw = File.ReadAllText(path).Trim();
+			if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double khz))
+			{
+				return (int)Math.Round(khz / 1000.0);
+			}
+		}
+		catch
+		{
+			// ignore
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Reads total disk bytes for the specified mount point. Returns null on failure.
+	/// </summary>
+	public static long? ReadDiskTotalBytes(string mountPoint)
+	{
+		try
+		{
+			var drive = new DriveInfo(mountPoint);
+			return drive.TotalSize;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Reads free disk bytes for the specified mount point. Returns null on failure.
+	/// </summary>
+	public static long? ReadDiskFreeBytes(string mountPoint)
+	{
+		try
+		{
+			var drive = new DriveInfo(mountPoint);
+			return drive.AvailableFreeSpace;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	/// <summary>
 	/// Starts publishing CPU temperature every 5 seconds by default.
 	/// An event is raised only when the temperature changes by at least the given threshold (default 2°C).
 	/// </summary>
@@ -119,7 +346,7 @@ public static class PiSystemInfo
 			return; // already running
 		}
 
-		_temperatureTimer = new Timer(_ => PublishTemperature(changeThresholdC), state: null, dueTime: pollInterval, period: pollInterval);
+		_temperatureTimer = new Timer(_ => PublishStatus(changeThresholdC), state: null, dueTime: pollInterval, period: pollInterval);
 	}
 
 	/// <summary>
@@ -133,27 +360,47 @@ public static class PiSystemInfo
 	}
 
 	/// <summary>
-	/// Polls the CPU temperature and raises <see cref="TemperatureChanged"/> when the change exceeds the threshold.
+	/// Polls system status and raises events for temperature change (thresholded) and full status snapshots.
 	/// </summary>
-	/// <param name="changeThresholdC">Minimum temperature delta required to publish.</param>
-	private static void PublishTemperature(double changeThresholdC)
+	/// <param name="tempChangeThresholdC">Minimum temperature delta required to publish TemperatureChanged.</param>
+	private static void PublishStatus(double tempChangeThresholdC)
 	{
-		// Read current temperature in Celsius; bail if unavailable.
-		double? current = GetCpuTemperatureCelsius();
-		if (!current.HasValue)
+		// Temperature
+		double? currentTemp = GetCpuTemperatureCelsius();
+		if (currentTemp.HasValue)
 		{
-			return;
+			int rounded = (int)Math.Round(currentTemp.Value);
+
+			if (!_lastPublishedTemperature.HasValue || Math.Abs(currentTemp.Value - _lastPublishedTemperature.Value) >= tempChangeThresholdC)
+			{
+				_lastPublishedTemperature = currentTemp.Value;
+				TemperatureChanged?.Invoke(null, rounded);
+			}
 		}
 
-		int rounded = (int)Math.Round(current.Value);
-
-		if (_lastPublishedTemperature.HasValue && Math.Abs(current.Value - _lastPublishedTemperature.Value) < changeThresholdC)
+		// Snapshot
+		const double bytesPerGiB = 1024 * 1024 * 1024d;
+		long? diskTotalBytes = ReadDiskTotalBytes("/");
+		long? diskFreeBytes = ReadDiskFreeBytes("/");
+		var wifiAddresses = GetIpAddresses(includeIPv6: false, wifiOnly: true);
+		var status = new PiStatusSnapshot
 		{
-			return;
-		}
+			Hostname = GetHostName(),
+			IpAddresses = wifiAddresses.Count > 0 ? wifiAddresses[0] : null,
+			WifiSsid = GetWifiSsid(),
+			LoadAvg1Minute = ReadLoadAverage(0),
+			LoadAvg5Minutes = ReadLoadAverage(1),
+			LoadAvg15Minutes = ReadLoadAverage(2),
+			MemTotalKb = ReadMemInfo("MemTotal"),
+			MemAvailableKb = ReadMemInfo("MemAvailable"),
+			DiskTotalGiB = diskTotalBytes.HasValue ? diskTotalBytes.Value / bytesPerGiB : null,
+			DiskFreeGiB = diskFreeBytes.HasValue ? diskFreeBytes.Value / bytesPerGiB : null,
+			UptimeSeconds = ReadUptimeSeconds(),
+			CpuTempC = currentTemp.HasValue ? (int?)Math.Round(currentTemp.Value) : null,
+			CpuFreqMHz = ReadCpuFreqMHz()
+		};
 
-		_lastPublishedTemperature = current.Value;
-
-		TemperatureChanged?.Invoke(null, rounded);
+		_lastStatus = status;
+		StatusChanged?.Invoke(null, status);
 	}
 }
