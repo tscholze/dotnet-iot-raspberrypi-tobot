@@ -463,19 +463,38 @@ dotnet run --project Tobot robot
 
 All helper scripts live in `scripts/` at the project root.
 
-- `scripts/run-tobot-web-kiosk.sh`: Starts the `Tobot.Web` Blazor app and opens it in Firefox kiosk mode on the Raspberry Pi at `http://localhost:5247/simple`.
+- `scripts/run-tobot-web-kiosk.sh`: Starts the `Tobot.Web` Blazor app and opens it in Firefox kiosk mode on the Raspberry Pi at `http://localhost:5247/bot`.
+- `scripts/add-to-autostart.sh`: Installs a user systemd service (`tobot-web-kiosk.service`) that runs the kiosk script automatically after the graphical session starts.
+- `scripts/remove-from-autostart.sh`: Disables and removes the autostart user service.
 
 Usage:
 
 ```bash
 chmod +x scripts/run-tobot-web-kiosk.sh
+chmod +x scripts/add-to-autostart.sh
+chmod +x scripts/remove-from-autostart.sh
+
+# Run once (non-autostart)
 ./scripts/run-tobot-web-kiosk.sh
+
+# Enable autostart (user service)
+./scripts/add-to-autostart.sh
+
+# Remove autostart
+./scripts/remove-from-autostart.sh
+
+# Check status
+systemctl --user status tobot-web-kiosk.service --no-pager
+
+# Optional: keep user services running at boot without login
+sudo loginctl enable-linger $USER
 ```
 
 Notes:
 - Requires `firefox` (or `firefox-esr`) installed on the Raspberry Pi.
 - Binds the web app to `0.0.0.0:5247` so it’s reachable on your LAN.
 - Adjust the script if you prefer Chromium (`chromium-browser --kiosk`).
+- The autostart unit runs after `graphical-session.target` and sets `DISPLAY=:0`. If `systemctl --user` is unavailable in your session, run from the desktop session or enable linger as shown above.
 
 ---
 
