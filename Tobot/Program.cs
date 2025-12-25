@@ -51,9 +51,10 @@ class Program
             Console.WriteLine("│  10. HC-SR04 Distance Demo   - Ultrasonic range test     │");
             Console.WriteLine("│  11. Observable Distance     - Reactive distance monitor │");
             Console.WriteLine("│  12. Random Drive Demo       - Autonomous obstacle avoid │");
+            Console.WriteLine("│  13. Directed Detection      - Find object direction     │");
             Console.WriteLine("│  0. Exit                                                 │");
             Console.WriteLine("└──────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-12): ");
+            Console.Write("\nEnter your choice (0-13): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -96,11 +97,14 @@ class Program
                 case "12":
                     RunRandomDriveDemo(controller);
                     break;
+                case "13":
+                    RunDirectedObjectDetectionDemo(controller);
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-12.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-13.");
                     break;
             }
 
@@ -156,9 +160,13 @@ class Program
             case "autonomous":
                 RunRandomDriveDemo(controller);
                 break;
+            case "detection":
+            case "directed":
+                RunDirectedObjectDetectionDemo(controller);
+                break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection");
                 break;
         }
     }
@@ -868,6 +876,73 @@ class Program
             Console.WriteLine("✅ Pan-Tilt demo complete!");
         }
         catch (Exception ex)
+
+    /// <summary>
+    /// Demonstrates directed object detection using pan-sweep with the HC-SR04 sensor.
+    /// Sweeps the sensor left to right to locate the closest object and report its direction.
+    /// </summary>
+    static void RunDirectedObjectDetectionDemo(TobotController controller)
+    {
+        Console.WriteLine("🎯 Directed Object Detection Demo");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Scanning for objects with directional info...\n");
+        Console.WriteLine("Configuration:");
+        Console.WriteLine("  Pan Range: -45° to +45°");
+        Console.WriteLine("  Sweep Increment: 5°");
+        Console.WriteLine("  Samples per Angle: 5");
+        Console.WriteLine("  Object Classification: Left (<-5°), Center (±5°), Right (>5°)");
+        Console.WriteLine();
+
+        try
+        {
+            // Perform multiple detection sweeps
+            for (int sweep = 1; sweep <= 3; sweep++)
+            {
+                Console.WriteLine($"\n▶ Scan {sweep}/3: Sweeping for closest object...");
+                var detected = controller.FindClosestObject();
+
+                if (detected != null)
+                {
+                    Console.WriteLine($"  ✓ Object Detected!");
+                    Console.WriteLine($"    Distance: {detected.Distance:F1} cm");
+                    Console.WriteLine($"    Pan Angle: {detected.PanAngle}°");
+                    Console.WriteLine($"    Direction: {detected.Direction}");
+                    
+                    // Provide directional feedback
+                    string feedback = detected.Direction switch
+                    {
+                        Tobot.Device.HcSr04.ObjectDirection.Left => "◄ Object is to the LEFT",
+                        Tobot.Device.HcSr04.ObjectDirection.Right => "► Object is to the RIGHT",
+                        _ => "● Object is CENTERED"
+                    };
+                    Console.WriteLine($"    {feedback}");
+                }
+                else
+                {
+                    Console.WriteLine("  ✗ No object detected in range.");
+                }
+
+                // Center servos between scans
+                if (sweep < 3)
+                {
+                    Console.WriteLine("  Centering servos...");
+                    controller.PanTilt(0, 0);
+                    Thread.Sleep(800);
+                }
+            }
+
+            // Return to center position
+            Console.WriteLine("\n▶ Returning servos to center...");
+            controller.PanTilt(0, 0);
+            Thread.Sleep(500);
+
+            Console.WriteLine("\n✅ Directed object detection demo complete!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error: {ex.Message}");
+        }
+    }
         {
             Console.WriteLine($"❌ Error: {ex.Message}");
         }

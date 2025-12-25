@@ -1,8 +1,63 @@
 using System.Device.Gpio;
 using Iot.Device.Hcsr04;
 using UnitsNet;
+using Tobot.Device.PanTiltHat;
 
 namespace Tobot.Device.HcSr04;
+
+/// <summary>
+/// Represents the detected direction of an object relative to the sensor's center position.
+/// </summary>
+public enum ObjectDirection
+{
+	/// <summary>
+	/// Object is centered or within the neutral zone.
+	/// </summary>
+	Center,
+
+	/// <summary>
+	/// Object is to the left of center.
+	/// </summary>
+	Left,
+
+	/// <summary>
+	/// Object is to the right of center.
+	/// </summary>
+	Right
+}
+
+/// <summary>
+/// Represents a detected object with distance and angular information.
+/// </summary>
+public class DetectedObject
+{
+	/// <summary>
+	/// Gets the measured distance to the object in centimeters.
+	/// </summary>
+	public double Distance { get; set; }
+
+	/// <summary>
+	/// Gets the pan angle at which the object was detected, in degrees (-90 to +90).
+	/// </summary>
+	public int PanAngle { get; set; }
+
+	/// <summary>
+	/// Gets the direction of the object relative to center (left, center, or right).
+	/// Objects within ±5° of center are classified as centered.
+	/// </summary>
+	public ObjectDirection Direction
+	{
+		get
+		{
+			if (Math.Abs(PanAngle) <= 5)
+			{
+				return ObjectDirection.Center;
+			}
+
+			return PanAngle < 0 ? ObjectDirection.Left : ObjectDirection.Right;
+		}
+	}
+}
 
 /// <summary>
 /// High-level manager for HC-SR04 ultrasonic distance sensors.
@@ -100,6 +155,62 @@ public sealed class HcSr04Sensor : IDisposable
 		}
 
 		return distance;
+	}
+
+	/// <summary>
+	/// Performs an autonomous pan sweep to detect the closest object within the field of view.
+	/// </summary>
+	/// <param name="panTilt">The Pan-Tilt HAT instance to control the sensor's direction.</param>
+	/// <param name="samples">Number of samples to average per pan angle. Default is 5.</param>
+	/// <param name="sweepIncrement">Degrees to increment between pan measurements. Default is 5° (smaller = finer resolution).</param>
+	/// <returns>
+	/// A <see cref="DetectedObject"/> containing the distance and direction of the closest object,
+	/// or <c>null</c> if no object is detected during the sweep.
+	/// </returns>
+	/// <remarks>
+	/// This method sweeps from -45° (left) to +45° (right) by default. The sensor dwells for 200ms
+	/// at each pan angle to allow the servo to settle before taking a measurement. Objects are detected
+	/// left, center, or right based on the pan angle where the closest distance is found.
+	/// </remarks>
+	public DetectedObject? FindClosestObject(PanTiltHat panTilt, int samples = DefaultSamplesPerReading, int sweepIncrement = 5)
+	{
+		EnsureNotDisposed();
+
+		if (panTilt == null)
+		{
+			throw new ArgumentNullException(nameof(panTilt));
+		}
+
+		if (sweepIncrement < 1)
+		{
+			throw new ArgumentOutOfRangeException(nameof(sweepIncrement), "Sweep increment must be at least 1°.");
+		}
+
+		DetectedObject? closest = null;
+		const int LeftBound = -45;
+		const int RightBound = 45;
+		const int ServoSettleMs = 200;
+
+		// Sweep from left to right
+		for (int angle = LeftBound; angle <= RightBound; angle += sweepIncrement)
+		{
+			panTilt.Pan(angle);
+			Thread.Sleep(ServoSettleMs);
+
+			if (TryReadDistance(out double distance, samples))
+			{
+				if (closest == null || distance < closest.Distance)
+				{
+					closest = new DetectedObject
+					{
+						Distance = distance,
+						PanAngle = angle
+					};
+				}
+			}
+		}
+
+		return closest;
 	}
 
 	/// <summary>
