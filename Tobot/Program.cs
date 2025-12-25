@@ -171,10 +171,7 @@ class Program
                 break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection, classifier
-            default:
-                Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection, classifier");
                 break;
         }
     }
@@ -884,6 +881,10 @@ class Program
             Console.WriteLine("✅ Pan-Tilt demo complete!");
         }
         catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error: {ex.Message}");
+        }
+    }
 
     /// <summary>
     /// Demonstrates directed object detection using pan-sweep with the HC-SR04 sensor.
@@ -1030,4 +1031,8 @@ class Program
             Console.WriteLine("\n✅ Direction classifier demo complete!");
         }
         catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error: {ex.Message}");
+        }
+    }
 }

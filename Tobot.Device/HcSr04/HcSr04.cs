@@ -1,7 +1,6 @@
 using System.Device.Gpio;
 using Iot.Device.Hcsr04;
 using UnitsNet;
-using Tobot.Device.PanTiltHat;
 
 namespace Tobot.Device.HcSr04;
 
@@ -172,7 +171,7 @@ public sealed class HcSr04Sensor : IDisposable
 	/// at each pan angle to allow the servo to settle before taking a measurement. Objects are detected
 	/// left, center, or right based on the pan angle where the closest distance is found.
 	/// </remarks>
-	public DetectedObject? FindClosestObject(PanTiltHat panTilt, int samples = DefaultSamplesPerReading, int sweepIncrement = 5)
+	public DetectedObject? FindClosestObject(PanTiltHat.PanTiltHat panTilt, int samples = DefaultSamplesPerReading, int sweepIncrement = 5)
 	{
 		EnsureNotDisposed();
 
