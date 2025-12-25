@@ -474,6 +474,34 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
+	/// Determines the direction of a detected object based on the current pan angle.
+	/// This is a lightweight alternative to <see cref="FindClosestObject"/> for use when the pan angle
+	/// is controlled externally (user input, other navigation logic, etc.).
+	/// </summary>
+	/// <param name="panAngleDegrees">Current pan angle in degrees (-90 to +90). Values at center (±5°) are classified as centered.</param>
+	/// <returns>The direction classification of the object (Left, Center, or Right).</returns>
+	public ObjectDirection GetObjectDirection(int panAngleDegrees)
+	{
+		EnsureNotDisposed();
+		return UltrasonicSensor.GetObjectDirection(panAngleDegrees);
+	}
+
+	/// <summary>
+	/// Reads the distance at the current pan angle and classifies the object direction.
+	/// Combines distance reading with direction classification in a single call.
+	/// </summary>
+	/// <param name="panAngleDegrees">Current pan angle in degrees (-90 to +90).</param>
+	/// <param name="distanceCm">Measured distance in centimeters when the method succeeds.</param>
+	/// <param name="direction">Direction classification of the object at the current pan angle.</param>
+	/// <param name="samples">Number of samples to average.</param>
+	/// <returns>True when a measurement succeeds; otherwise false.</returns>
+	public bool TryReadDistanceWithDirection(int panAngleDegrees, out double distanceCm, out ObjectDirection direction, int samples = HcSr04Sensor.DefaultSamplesPerReading)
+	{
+		EnsureNotDisposed();
+		return UltrasonicSensor.TryReadDistanceWithDirection(panAngleDegrees, out distanceCm, out direction, samples);
+	}
+
+	/// <summary>
 	/// Gets an observable sequence that emits distance measurements when they change by more than the specified threshold.
 	/// The sensor is polled every 500ms and changes greater than 1cm trigger a notification.
 	/// </summary>

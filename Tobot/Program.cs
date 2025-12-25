@@ -52,9 +52,10 @@ class Program
             Console.WriteLine("│  11. Observable Distance     - Reactive distance monitor │");
             Console.WriteLine("│  12. Random Drive Demo       - Autonomous obstacle avoid │");
             Console.WriteLine("│  13. Directed Detection      - Find object direction     │");
+            Console.WriteLine("│  14. Direction Classifier    - Simple direction labeling │");
             Console.WriteLine("│  0. Exit                                                 │");
             Console.WriteLine("└──────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-13): ");
+            Console.Write("\nEnter your choice (0-14): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -100,11 +101,14 @@ class Program
                 case "13":
                     RunDirectedObjectDetectionDemo(controller);
                     break;
+                case "14":
+                    RunDirectionClassifierDemo(controller);
+                    break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-13.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-14.");
                     break;
             }
 
@@ -161,9 +165,13 @@ class Program
                 RunRandomDriveDemo(controller);
                 break;
             case "detection":
-            case "directed":
-                RunDirectedObjectDetectionDemo(controller);
+            case "classifier":
+            case "direction":
+                RunDirectionClassifierDemo(controller);
                 break;
+            default:
+                Console.WriteLine($"Unknown example: {exampleName}");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection, classifier
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
                 Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection");
@@ -943,8 +951,83 @@ class Program
             Console.WriteLine($"❌ Error: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Demonstrates direction classification by manually positioning the pan servo and reading the direction.
+    /// This is a lightweight alternative to autonomous sweeping - useful when pan control is handled externally.
+    /// </summary>
+    static void RunDirectionClassifierDemo(TobotController controller)
+    {
+        Console.WriteLine("🏷️  Direction Classifier Demo");
+        Console.WriteLine("═══════════════════════════════════════");
+        Console.WriteLine("Manual pan positioning with direction classification...\n");
+        Console.WriteLine("Configuration:");
+        Console.WriteLine("  Direction Zones: Left (<-5°), Center (±5°), Right (>5°)");
+        Console.WriteLine("  Method: External pan control + lightweight direction classification");
+        Console.WriteLine();
+
+        try
         {
-            Console.WriteLine($"❌ Error: {ex.Message}");
+            // Define test positions
+            var testPositions = new[]
+            {
+                (-45, "Far Left"),
+                (-30, "Left"),
+                (-10, "Slightly Left"),
+                (0, "Center"),
+                (10, "Slightly Right"),
+                (30, "Right"),
+                (45, "Far Right")
+            };
+
+            Console.WriteLine("▶ Testing direction classification at various pan angles:\n");
+
+            foreach (var (angle, description) in testPositions)
+            {
+                // Move to position
+                controller.SetPanAngle(angle);
+                Thread.Sleep(400); // Wait for servo to settle
+
+                // Read distance and get direction
+                if (controller.TryReadDistanceWithDirection(angle, out double distanceCm, out var direction))
+                {
+                    // Get visual indicator
+                    string indicator = direction switch
+                    {
+                        Tobot.Device.HcSr04.ObjectDirection.Left => "◄",
+                        Tobot.Device.HcSr04.ObjectDirection.Right => "►",
+                        _ => "●"
+                    };
+
+                    Console.WriteLine($"  [{indicator}] {angle:+00;-00}° | {description,-20} | {distanceCm:F1}cm | Dir: {direction}");
+                }
+                else
+                {
+                    Console.WriteLine($"  [?] {angle:+00;-00}° | {description,-20} | No object detected");
+                }
+            }
+
+            // Return to center
+            Console.WriteLine("\n▶ Returning to center...");
+            controller.PanTilt(0, 0);
+            Thread.Sleep(500);
+
+            // Demonstrate the lighter-weight GetObjectDirection method
+            Console.WriteLine("\n▶ Direction classification examples (without distance reading):");
+            int[] angleTests = { -45, -10, 0, 10, 45 };
+            foreach (int testAngle in angleTests)
+            {
+                var direction = controller.GetObjectDirection(testAngle);
+                string description = direction switch
+                {
+                    Tobot.Device.HcSr04.ObjectDirection.Left => "→ LEFT",
+                    Tobot.Device.HcSr04.ObjectDirection.Right => "← RIGHT",
+                    _ => "→ CENTER ←"
+                };
+                Console.WriteLine($"  Pan {testAngle:+00;-00}°: {description}");
+            }
+
+            Console.WriteLine("\n✅ Direction classifier demo complete!");
         }
-    }
+        catch (Exception ex)
 }

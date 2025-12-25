@@ -214,6 +214,48 @@ public sealed class HcSr04Sensor : IDisposable
 	}
 
 	/// <summary>
+	/// Determines the direction of a detected object based on the current pan angle.
+	/// This is a lightweight alternative to <see cref="FindClosestObject"/> when the pan angle
+	/// is already being controlled externally (e.g., by user input or other navigation logic).
+	/// </summary>
+	/// <param name="panAngleDegrees">Current pan angle in degrees (-90 to +90). Values at center (±5°) are classified as centered.</param>
+	/// <returns>The direction classification of the object (Left, Center, or Right).</returns>
+	/// <remarks>
+	/// This method only performs mathematical classification without any sensor movement or measurement.
+	/// Objects within ±5° of center are considered centered; anything beyond that is left or right.
+	/// Typical usage: Pan the sensor externally, take a distance reading, then call this method
+	/// to classify the direction based on the pan angle where the object was detected.
+	/// </remarks>
+	public ObjectDirection GetObjectDirection(int panAngleDegrees)
+	{
+		EnsureNotDisposed();
+
+		if (Math.Abs(panAngleDegrees) <= 5)
+		{
+			return ObjectDirection.Center;
+		}
+
+		return panAngleDegrees < 0 ? ObjectDirection.Left : ObjectDirection.Right;
+	}
+
+	/// <summary>
+	/// Reads the distance at the current pan angle and classifies the object direction.
+	/// This combines distance reading with direction classification in a single method call.
+	/// </summary>
+	/// <param name="panAngleDegrees">Current pan angle in degrees (-90 to +90).</param>
+	/// <param name="distanceCm">Measured distance in centimeters when the method succeeds.</param>
+	/// <param name="direction">Direction classification of the object at the current pan angle.</param>
+	/// <param name="samples">Number of consecutive measurements to average. Must be greater than zero.</param>
+	/// <returns><c>true</c> when at least one measurement succeeded; otherwise <c>false</c>.</returns>
+	public bool TryReadDistanceWithDirection(int panAngleDegrees, out double distanceCm, out ObjectDirection direction, int samples = DefaultSamplesPerReading)
+	{
+		EnsureNotDisposed();
+
+		direction = GetObjectDirection(panAngleDegrees);
+		return TryReadDistance(out distanceCm, samples);
+	}
+
+	/// <summary>
 	/// Releases the managed resources associated with the sensor.
 	/// </summary>
 	public void Dispose()
