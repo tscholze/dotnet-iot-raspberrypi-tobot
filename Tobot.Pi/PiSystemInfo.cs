@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -51,9 +52,16 @@ public static class PiSystemInfo
 	/// </summary>
 	public static string? GetWifiSsid()
 	{
+		// 1) Try "iwgetid -r" (most reliable on Raspberry Pi OS)
+		string? ssid = TryRunCommand("iwgetid", "-r");
+		if (!string.IsNullOrWhiteSpace(ssid))
+		{
+			return ssid.Trim();
+		}
+
+		// 2) Fallback: use "iw dev <iface> link" and parse the SSID line
 		try
 		{
-			// Find active wireless interface
 			foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
 			{
 				if (ni.OperationalStatus != OperationalStatus.Up)
@@ -67,14 +75,20 @@ public static class PiSystemInfo
 					continue;
 				}
 
-				// Try to read SSID from sysfs for this interface
-				string ssidPath = $"/sys/class/net/{ni.Name}/wireless/ssid";
-				if (File.Exists(ssidPath))
+				string? linkInfo = TryRunCommand("iw", $"dev {ni.Name} link");
+				if (!string.IsNullOrWhiteSpace(linkInfo))
 				{
-					string ssid = File.ReadAllText(ssidPath).Trim();
-					if (!string.IsNullOrEmpty(ssid))
+					foreach (string line in linkInfo.Split('\n'))
 					{
-						return ssid;
+						string trimmed = line.Trim();
+						if (trimmed.StartsWith("SSID ", StringComparison.OrdinalIgnoreCase))
+						{
+							string candidate = trimmed.Substring(5).Trim();
+							if (!string.IsNullOrEmpty(candidate))
+							{
+								return candidate;
+							}
+						}
 					}
 				}
 			}
@@ -85,6 +99,39 @@ public static class PiSystemInfo
 		}
 
 		return null;
+	}
+
+	/// <summary>
+	/// Runs a system command and returns trimmed stdout, or null on failure.
+	/// </summary>
+	private static string? TryRunCommand(string fileName, string arguments)
+	{
+		try
+		{
+			var psi = new ProcessStartInfo
+			{
+				FileName = fileName,
+				Arguments = arguments,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				UseShellExecute = false,
+				CreateNoWindow = true
+			};
+
+			using var proc = Process.Start(psi);
+			if (proc == null)
+			{
+				return null;
+			}
+
+			string output = proc.StandardOutput.ReadToEnd();
+			proc.WaitForExit(1000);
+			return string.IsNullOrWhiteSpace(output) ? null : output.Trim();
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	/// <summary>
