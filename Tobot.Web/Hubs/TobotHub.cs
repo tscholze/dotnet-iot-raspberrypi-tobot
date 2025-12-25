@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Tobot.Device.ExplorerHat;
+using Tobot.Device.HcSr04;
 
 namespace Tobot.Web.Hubs;
 
@@ -25,6 +26,11 @@ public class TobotHub(ExplorerHat explorerHat, Device.TobotController controller
     /// The TobotController instance for higher-level operations.
     /// </summary>
     private readonly Device.TobotController _controller = controller;
+
+    /// <summary>
+    /// Subscription for reactive distance monitoring.
+    /// </summary>
+    private IDisposable? _distanceSubscription;
 
     #endregion
 
@@ -80,6 +86,139 @@ public class TobotHub(ExplorerHat explorerHat, Device.TobotController controller
     {
         _explorerHat.Motor.Stop();
         await Clients.All.SendAsync(TobotHubEvents.AllMotorsStopped);
+    }
+
+    #endregion
+
+    #region Pan/Tilt Control
+
+    /// <summary>
+    /// Sets both pan and tilt.
+    /// </summary>
+    public async Task SetPanTilt(double panDegrees, double tiltDegrees)
+    {
+        _controller.PanTilt(panDegrees, tiltDegrees);
+        var (pan, tilt) = _controller.GetPanTiltAngles();
+        await Clients.All.SendAsync(TobotHubEvents.PanTiltChanged, pan, tilt);
+    }
+
+    /// <summary>
+    /// Sets pan angle only.
+    /// </summary>
+    public async Task SetPan(double panDegrees)
+    {
+        _controller.SetPanAngle(panDegrees);
+        var (pan, tilt) = _controller.GetPanTiltAngles();
+        await Clients.All.SendAsync(TobotHubEvents.PanTiltChanged, pan, tilt);
+    }
+
+    /// <summary>
+    /// Sets tilt angle only.
+    /// </summary>
+    public async Task SetTilt(double tiltDegrees)
+    {
+        _controller.SetTiltAngle(tiltDegrees);
+        var (pan, tilt) = _controller.GetPanTiltAngles();
+        await Clients.All.SendAsync(TobotHubEvents.PanTiltChanged, pan, tilt);
+    }
+
+    /// <summary>
+    /// Gets current pan and tilt angles.
+    /// </summary>
+    public (double pan, double tilt) GetPanTilt()
+    {
+        return _controller.GetPanTiltAngles();
+    }
+
+    /// <summary>
+    /// Gets Pan-Tilt idle timeout.
+    /// </summary>
+    public double GetPanTiltIdleTimeout()
+    {
+        return _controller.GetPanTiltIdleTimeout();
+    }
+
+    #endregion
+
+    #region Distance & Detection
+
+    /// <summary>
+    /// Reads distance once; returns null if measurement fails.
+    /// </summary>
+    public double? ReadDistance(int samples = HcSr04Sensor.DefaultSamplesPerReading)
+    {
+        return _controller.TryReadDistance(out double distanceCm, samples) ? distanceCm : (double?)null;
+    }
+
+    /// <summary>
+    /// Starts reactive distance monitoring and broadcasts updates.
+    /// </summary>
+    public void StartDistanceMonitoring(double thresholdCm = 1.0, int samples = HcSr04Sensor.DefaultSamplesPerReading)
+    {
+        _distanceSubscription?.Dispose();
+        _distanceSubscription = _controller
+            .ObserveDistance(thresholdCm, samples)
+            .Subscribe(async d => await Clients.All.SendAsync(TobotHubEvents.DistanceChanged, d));
+    }
+
+    /// <summary>
+    /// Stops reactive distance monitoring.
+    /// </summary>
+    public void StopDistanceMonitoring()
+    {
+        _distanceSubscription?.Dispose();
+        _distanceSubscription = null;
+    }
+
+    /// <summary>
+    /// Performs a detection sweep and broadcasts the result.
+    /// </summary>
+    public async Task<DetectedObject?> FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5)
+    {
+        var result = _controller.FindClosestObject(samples, sweepIncrement);
+        if (result != null)
+        {
+            await Clients.All.SendAsync(TobotHubEvents.ObjectDetectionCompleted, result.Distance, result.PanAngle, result.Direction.ToString());
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Reads distance and classifies direction at a given pan angle; broadcasts result.
+    /// </summary>
+    public async Task<(double? distanceCm, string direction)> TryReadDistanceWithDirection(int panAngleDegrees, int samples = HcSr04Sensor.DefaultSamplesPerReading)
+    {
+        if (_controller.TryReadDistanceWithDirection(panAngleDegrees, out double distanceCm, out ObjectDirection direction, samples))
+        {
+            await Clients.All.SendAsync(TobotHubEvents.DirectionClassified, panAngleDegrees, distanceCm, direction.ToString());
+            return (distanceCm, direction.ToString());
+        }
+
+        await Clients.All.SendAsync(TobotHubEvents.DirectionClassified, panAngleDegrees, null, ObjectDirection.Center.ToString());
+        return (null, ObjectDirection.Center.ToString());
+    }
+
+    #endregion
+
+    #region Random Drive
+
+    /// <summary>
+    /// Starts autonomous random drive and notifies clients.
+    /// </summary>
+    public async Task StartRandomDrive(int forwardSpeed = 50, int turnSpeed = 40, double obstacleDistanceCm = 20.0, double clearDistanceCm = 30.0)
+    {
+        await Clients.All.SendAsync(TobotHubEvents.RandomDriveStarted, forwardSpeed, turnSpeed, obstacleDistanceCm, clearDistanceCm);
+        _ = _controller.StartRandomDrive(forwardSpeed, turnSpeed, obstacleDistanceCm, clearDistanceCm);
+    }
+
+    /// <summary>
+    /// Stops autonomous random drive and notifies clients.
+    /// </summary>
+    public async Task StopRandomDrive()
+    {
+        _controller.StopRandomDrive();
+        await Clients.All.SendAsync(TobotHubEvents.RandomDriveStopped);
     }
 
     #endregion

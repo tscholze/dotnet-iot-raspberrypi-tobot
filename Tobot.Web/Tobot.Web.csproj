@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tobot.Device\Tobot.Device.csproj" />
+    <ProjectReference Include="..\Tobot.Pi\Tobot.Pi.csproj" />
   </ItemGroup>
 
 </Project>

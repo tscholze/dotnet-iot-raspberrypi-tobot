@@ -13,6 +13,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<ExplorerHat>();
 builder.Services.AddSingleton<TobotController>();
 builder.Services.AddHostedService<DistanceBroadcastService>();
+builder.Services.AddHostedService<PiStatusBroadcastService>();
 
 var app = builder.Build();
 

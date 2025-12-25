@@ -31,6 +31,13 @@
     </div>
 </div>
 
+<div class="status-bar">
+    <span>@_wifiSsidDisplay</span>
+    <span>• @_wifiIpDisplay</span>
+    <span>• CPU @_cpuLoadDisplay</span>
+    <span>• MEM @_memLoadDisplay</span>
+    </div>
+
 <style>
     * {
         margin: 0;
@@ -598,6 +605,22 @@
             0 0 60px rgba(100, 200, 255, 0.6),
             inset 0 -20px 40px rgba(0, 0, 0, 0.1);
     }
+
+    .status-bar {
+        position: fixed;
+        bottom: 10px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-start;
+        align-items: center;
+        color: rgba(255,255,255,0.85);
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        opacity: 0.7;
+        pointer-events: none;
+    }
 </style>
 
 @code {
@@ -661,6 +684,12 @@
     /// </summary>
     private bool _isRandomDriveActive;
 
+    // Status bar fields
+    private string _wifiSsidDisplay = "Wi‑Fi: --";
+    private string _wifiIpDisplay = "IP: --";
+    private string _cpuLoadDisplay = "--%";
+    private string _memLoadDisplay = "--%";
+
     /// <summary>
     /// Returns the CSS class corresponding to the current mood.
     /// </summary>
@@ -722,6 +751,15 @@
                 // No specific rule matched; stay in current mood
             }
 
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<string?, string?, double, double>(TobotHubEvents.PiStatusUpdated, (ssid, ip, cpuPct, memPct) =>
+        {
+            _wifiSsidDisplay = $"Wi‑Fi: {ssid ?? "(not connected)"}";
+            _wifiIpDisplay = $"IP: {ip ?? "(none)"}";
+            _cpuLoadDisplay = $"{cpuPct:F0}%";
+            _memLoadDisplay = $"{memPct:F0}%";
             InvokeAsync(StateHasChanged);
         });
 
