@@ -1,4 +1,7 @@
 <Solution>
+  <Project Path="Tobo.Esp32.Remote/Tobot.Esp32.Remote.nfproj" Type="11a8dd76-328b-46df-9f39-f559912d0360" Id="78a9d79e-e500-4638-a5d2-05363c5d6b4e">
+    <Deploy />
+  </Project>
   <Project Path="Tobot.Device/Tobot.Device.csproj" />
   <Project Path="Tobot.Pi/Tobot.Pi.csproj" />
   <Project Path="Tobot.Web/Tobot.Web.csproj" />
