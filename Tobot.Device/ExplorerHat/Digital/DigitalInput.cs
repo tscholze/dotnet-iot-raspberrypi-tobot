@@ -44,8 +44,8 @@ namespace Tobot.Device.ExplorerHat.Digital
         /// </summary>
         public event PinChangeEventHandler? Changed
         {
-            add => _controller.RegisterCallbackForPinValueChangedEvent(_pin, PinEventTypes.Rising | PinEventTypes.Falling, value);
-            remove => _controller.UnregisterCallbackForPinValueChangedEvent(_pin, value);
+            add { if (value != null) _controller.RegisterCallbackForPinValueChangedEvent(_pin, PinEventTypes.Rising | PinEventTypes.Falling, value); }
+            remove { if (value != null) _controller.UnregisterCallbackForPinValueChangedEvent(_pin, value); }
         }
 
         /// <summary>
