@@ -4,235 +4,156 @@
 @implements IAsyncDisposable
 @inject NavigationManager Navigation
 
-<PageTitle>Tobot - Radar</PageTitle>
+<PageTitle>Radar</PageTitle>
 
-<div class="radar-page">
-    <div class="radar-header">
-        <div>
-            <div class="radar-title">Tobot Radar</div>
-            <div class="radar-subtitle">Ultrasonic sweep map</div>
-        </div>
-        <div class="radar-status">
-            <span class="status-pill @(_isConnected ? "ok" : "down")">@(_isConnected ? "Connected" : "Disconnected")</span>
-            <span class="status-pill">Auto scan: @(_autoScanEnabled ? "On" : "Off")</span>
-        </div>
-    </div>
+<div class="radar-screen">
+    <svg class="radar-svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMax meet">
+        <defs>
+            <radialGradient id="radarGlow" cx="50%" cy="100%" r="100%">
+                <stop offset="0%" stop-color="#1a3a1a" />
+                <stop offset="100%" stop-color="#0a140a" />
+            </radialGradient>
+            <clipPath id="arcClip">
+                <path d="M 200 200 L 25 25 A 175 175 0 0 1 375 25 L 200 200 Z" />
+            </clipPath>
+        </defs>
 
-    <div class="radar-body">
-        <div class="radar-display">
-            <div class="radar-sweep"></div>
-            <svg class="radar-grid" viewBox="0 0 200 200" aria-hidden="true">
-                <!-- Forward-facing concentric arcs -->
-                <path class="grid-arc" d="M 100 10 A 90 90 0 0 1 100 190" />
-                <path class="grid-arc" d="M 100 40 A 60 60 0 0 1 100 160" />
-                <path class="grid-arc" d="M 100 70 A 30 30 0 0 1 100 130" />
-                <!-- Center line (0 degrees) -->
-                <line class="grid-line" x1="100" y1="10" x2="100" y2="190" />
-                <!-- Left edge (-90 degrees) -->
-                <line class="grid-line" x1="10" y1="100" x2="100" y2="100" />
-                <!-- Right edge (+90 degrees) -->
-                <line class="grid-line" x1="190" y1="100" x2="100" y2="100" />
-            </svg>
-            <svg class="radar-blips" viewBox="0 0 200 200" role="img" aria-label="Radar detection">
-                @if (HasDetection)
-                {
-                    <circle class="blip-pulse" cx="@DotX" cy="@DotY" r="8" />
-                    <circle class="blip-core" cx="@DotX" cy="@DotY" r="3" />
-                }
-            </svg>
-        </div>
+        <rect x="0" y="0" width="400" height="220" fill="#050a05" />
 
-        <div class="radar-readout">
-            <div class="readout-row">
-                <div class="label">Distance</div>
-                <div class="value">@DistanceText</div>
-            </div>
-            <div class="readout-row">
-                <div class="label">Pan angle</div>
-                <div class="value">@PanAngleText</div>
-            </div>
-            <div class="readout-row">
-                <div class="label">Direction</div>
-                <div class="value">@DirectionText</div>
-            </div>
-            <div class="readout-row">
-                <div class="label">Last update</div>
-                <div class="value">@LastUpdateText</div>
-            </div>
+        <g clip-path="url(#arcClip)">
+            <circle cx="200" cy="200" r="175" fill="url(#radarGlow)" />
 
-            <div class="radar-controls">
-                <button class="action" @onclick="TriggerScan" disabled="@(!_isConnected)">Trigger sweep</button>
-                <button class="action ghost" @onclick="ToggleAutoScan" disabled="@(!_isConnected)">Toggle auto</button>
-            </div>
+            <circle cx="200" cy="200" r="@Ring1R" fill="none" stroke="#1a4a1a" stroke-width="1" opacity="0.6" />
+            <circle cx="200" cy="200" r="@Ring2R" fill="none" stroke="#1a4a1a" stroke-width="1" opacity="0.6" />
+            <circle cx="200" cy="200" r="@Ring3R" fill="none" stroke="#1a4a1a" stroke-width="1" opacity="0.5" />
 
-            <div class="readout-note">Range mapped to @MaxDistanceCmText</div>
-            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            <text x="200" y="@(200 - Ring1R - 4)" text-anchor="middle" fill="#2a6a2a" font-size="10" font-family="monospace">20</text>
+            <text x="200" y="@(200 - Ring2R - 4)" text-anchor="middle" fill="#2a6a2a" font-size="10" font-family="monospace">40</text>
+            <text x="200" y="@(200 - Ring3R - 4)" text-anchor="middle" fill="#2a6a2a" font-size="10" font-family="monospace">60</text>
+
+            <line x1="200" y1="200" x2="@AngleLineX(-45)" y2="@AngleLineY(-45)" stroke="#1a4a1a" stroke-width="1" opacity="0.4" />
+            <line x1="200" y1="200" x2="@AngleLineX(-30)" y2="@AngleLineY(-30)" stroke="#1a4a1a" stroke-width="1" opacity="0.3" />
+            <line x1="200" y1="200" x2="@AngleLineX(-15)" y2="@AngleLineY(-15)" stroke="#1a4a1a" stroke-width="1" opacity="0.3" />
+            <line x1="200" y1="200" x2="200" y2="25" stroke="#1a4a1a" stroke-width="1" opacity="0.4" />
+            <line x1="200" y1="200" x2="@AngleLineX(15)" y2="@AngleLineY(15)" stroke="#1a4a1a" stroke-width="1" opacity="0.3" />
+            <line x1="200" y1="200" x2="@AngleLineX(30)" y2="@AngleLineY(30)" stroke="#1a4a1a" stroke-width="1" opacity="0.3" />
+            <line x1="200" y1="200" x2="@AngleLineX(45)" y2="@AngleLineY(45)" stroke="#1a4a1a" stroke-width="1" opacity="0.4" />
+
+            <line x1="200" y1="200" x2="@SweepX" y2="@SweepY" stroke="#3a8a3a" stroke-width="2" opacity="0.8">
+                <animate attributeName="opacity" values="0.9;0.4;0.9" dur="0.8s" repeatCount="indefinite" />
+            </line>
+
+            @if (_hasDetection)
             {
-                <div class="readout-error">@_errorMessage</div>
+                <circle cx="@BlipX" cy="@BlipY" r="6" fill="#5aff5a" opacity="0.9">
+                    <animate attributeName="r" values="4;8;4" dur="1.2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="1;0.5;1" dur="1.2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="@BlipX" cy="@BlipY" r="3" fill="#aaffaa" />
             }
-        </div>
+        </g>
+
+        <path d="M 25 25 A 175 175 0 0 1 375 25" fill="none" stroke="#2a6a2a" stroke-width="2" />
+        <line x1="200" y1="200" x2="25" y2="25" stroke="#2a6a2a" stroke-width="1" />
+        <line x1="200" y1="200" x2="375" y2="25" stroke="#2a6a2a" stroke-width="1" />
+
+        <circle cx="200" cy="200" r="4" fill="#3a8a3a" />
+
+        <text x="18" y="18" text-anchor="middle" fill="#3a8a3a" font-size="11" font-family="monospace">-45</text>
+        <text x="200" y="14" text-anchor="middle" fill="#3a8a3a" font-size="11" font-family="monospace">0</text>
+        <text x="382" y="18" text-anchor="middle" fill="#3a8a3a" font-size="11" font-family="monospace">+45</text>
+    </svg>
+
+    <div class="detection-info">
+        @if (_hasDetection)
+        {
+            <span>X: @XCoord cm | Y: @YCoord cm | D: @DistanceText</span>
+        }
+        else
+        {
+            <span>No detection</span>
+        }
     </div>
 </div>
 
 @code {
-    /// <summary>
-    /// SignalR connection to the Tobot hub for radar updates.
-    /// </summary>
     private HubConnection? _hubConnection;
-
-    /// <summary>
-    /// Cancellation source for the auto-scan loop.
-    /// </summary>
     private CancellationTokenSource? _scanCts;
-
-    /// <summary>
-    /// Background task running the auto-scan loop.
-    /// </summary>
+    private CancellationTokenSource? _componentCts;
     private Task? _scanTask;
 
-    /// <summary>
-    /// Cancellation source that tracks the component lifetime.
-    /// </summary>
-    private CancellationTokenSource? _componentCts;
-
-    /// <summary>
-    /// Last detected distance in centimeters.
-    /// </summary>
     private double? _distanceCm;
-
-    /// <summary>
-    /// Last detected pan angle in degrees.
-    /// </summary>
     private int? _panAngle;
+    private int _sweepAngle = -45;
+    private bool _hasDetection;
 
-    /// <summary>
-    /// Last detected direction label.
-    /// </summary>
-    private string _direction = "Center";
-
-    /// <summary>
-    /// Timestamp of the last detection update (UTC).
-    /// </summary>
-    private DateTimeOffset? _lastUpdateUtc;
-
-    /// <summary>
-    /// Whether the hub connection is currently active.
-    /// </summary>
-    private bool _isConnected;
-
-    /// <summary>
-    /// Whether automatic scanning is enabled.
-    /// </summary>
-    private bool _autoScanEnabled = true;
-
-    /// <summary>
-    /// Error message to display when operations fail.
-    /// </summary>
-    private string? _errorMessage;
-
-    /// <summary>
-    /// Maximum radar range used to normalize the blip position.
-    /// </summary>
     private const double MaxDistanceCm = 60.0;
-
-    /// <summary>
-    /// Degrees to increment between sweep measurements.
-    /// </summary>
+    private const double RadarRadius = 175.0;
     private const int SweepIncrement = 5;
-
-    /// <summary>
-    /// Samples averaged per measurement.
-    /// </summary>
     private const int SamplesPerReading = 5;
+    private static readonly TimeSpan ScanInterval = TimeSpan.FromMilliseconds(2000);
 
-    /// <summary>
-    /// Interval between automatic sweep triggers.
-    /// </summary>
-    private static readonly TimeSpan ScanInterval = TimeSpan.FromMilliseconds(1800);
+    private double Ring1R => RadarRadius * (20.0 / MaxDistanceCm);
+    private double Ring2R => RadarRadius * (40.0 / MaxDistanceCm);
+    private double Ring3R => RadarRadius * (60.0 / MaxDistanceCm);
 
-    /// <summary>
-    /// Whether there is a valid detection to display.
-    /// </summary>
-    private bool HasDetection => _distanceCm.HasValue && _panAngle.HasValue;
-
-    /// <summary>
-    /// Formatted distance readout.
-    /// </summary>
     private string DistanceText => _distanceCm.HasValue ? $"{_distanceCm.Value:F1} cm" : "--";
+    private string XCoord => _hasDetection ? $"{CalculateX():F1}" : "--";
+    private string YCoord => _hasDetection ? $"{CalculateY():F1}" : "--";
 
-    /// <summary>
-    /// Formatted pan angle readout.
-    /// </summary>
-    private string PanAngleText => _panAngle.HasValue ? $"{_panAngle.Value} deg" : "--";
+    private double CalculateX()
+    {
+        if (!_distanceCm.HasValue || !_panAngle.HasValue) return 0;
+        double angleRad = _panAngle.Value * Math.PI / 180.0;
+        return _distanceCm.Value * Math.Sin(angleRad);
+    }
 
-    /// <summary>
-    /// Formatted direction readout.
-    /// </summary>
-    private string DirectionText => _direction;
+    private double CalculateY()
+    {
+        if (!_distanceCm.HasValue || !_panAngle.HasValue) return 0;
+        double angleRad = _panAngle.Value * Math.PI / 180.0;
+        return _distanceCm.Value * Math.Cos(angleRad);
+    }
 
-    /// <summary>
-    /// Formatted maximum distance label.
-    /// </summary>
-    private string MaxDistanceCmText => $"{MaxDistanceCm:F0} cm";
+    private double AngleLineX(int angleDeg)
+    {
+        double angleRad = (angleDeg - 90) * Math.PI / 180.0;
+        return 200 + RadarRadius * Math.Cos(angleRad);
+    }
 
-    /// <summary>
-    /// Relative time since the last detection update.
-    /// </summary>
-    private string LastUpdateText
+    private double AngleLineY(int angleDeg)
+    {
+        double angleRad = (angleDeg - 90) * Math.PI / 180.0;
+        return 200 + RadarRadius * Math.Sin(angleRad);
+    }
+
+    private double SweepX => AngleLineX(_sweepAngle);
+    private double SweepY => AngleLineY(_sweepAngle);
+
+    private double BlipX
     {
         get
         {
-            if (!_lastUpdateUtc.HasValue)
-            {
-                return "No detection yet";
-            }
-
-            var seconds = (DateTimeOffset.UtcNow - _lastUpdateUtc.Value).TotalSeconds;
-            return seconds < 1 ? "Just now" : $"{seconds:F1}s ago";
+            if (!_hasDetection || !_distanceCm.HasValue || !_panAngle.HasValue) return 200;
+            double distance = Math.Min(_distanceCm.Value, MaxDistanceCm);
+            double radius = distance / MaxDistanceCm * RadarRadius;
+            double angleRad = (_panAngle.Value - 90) * Math.PI / 180.0;
+            return 200 + radius * Math.Cos(angleRad);
         }
     }
 
-    /// <summary>
-    /// X coordinate for the detection blip in the radar view.
-    /// </summary>
-    private double DotX
+    private double BlipY
     {
         get
         {
-            if (!HasDetection)
-            {
-                return 100;
-            }
-
-            double distance = Math.Min(_distanceCm!.Value, MaxDistanceCm);
-            double radius = distance / MaxDistanceCm * 90.0;
-            double angleRad = _panAngle!.Value * Math.PI / 180.0;
-            return 100 + radius * Math.Sin(angleRad);
+            if (!_hasDetection || !_distanceCm.HasValue || !_panAngle.HasValue) return 200;
+            double distance = Math.Min(_distanceCm.Value, MaxDistanceCm);
+            double radius = distance / MaxDistanceCm * RadarRadius;
+            double angleRad = (_panAngle.Value - 90) * Math.PI / 180.0;
+            return 200 + radius * Math.Sin(angleRad);
         }
     }
 
-    /// <summary>
-    /// Y coordinate for the detection blip in the radar view.
-    /// </summary>
-    private double DotY
-    {
-        get
-        {
-            if (!HasDetection)
-            {
-                return 100;
-            }
-
-            double distance = Math.Min(_distanceCm!.Value, MaxDistanceCm);
-            double radius = distance / MaxDistanceCm * 90.0;
-            double angleRad = _panAngle!.Value * Math.PI / 180.0;
-            return 100 - radius * Math.Cos(angleRad);
-        }
-    }
-
-    /// <summary>
-    /// Initializes the hub connection and auto-scan loop.
-    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         _componentCts = new CancellationTokenSource();
@@ -246,33 +167,19 @@
         {
             _distanceCm = distance;
             _panAngle = panAngle;
-            _direction = direction;
-            _lastUpdateUtc = DateTimeOffset.UtcNow;
-            _errorMessage = null;
+            _sweepAngle = panAngle;
+            _hasDetection = distance <= MaxDistanceCm;
             InvokeAsync(StateHasChanged);
         });
 
         try
         {
             await _hubConnection.StartAsync().ConfigureAwait(false);
-            _isConnected = true;
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = ex.Message;
-            _isConnected = false;
-            return;
-        }
-
-        if (_autoScanEnabled)
-        {
             StartScanLoop();
         }
+        catch { }
     }
 
-    /// <summary>
-    /// Starts the periodic scan loop.
-    /// </summary>
     private void StartScanLoop()
     {
         StopScanLoop();
@@ -280,85 +187,43 @@
         _scanTask = RunScanLoopAsync(_scanCts.Token);
     }
 
-    /// <summary>
-    /// Stops the periodic scan loop.
-    /// </summary>
     private void StopScanLoop()
     {
-        if (_scanCts is null)
-        {
-            return;
-        }
-
+        if (_scanCts is null) return;
         _scanCts.Cancel();
         _scanCts.Dispose();
         _scanCts = null;
         _scanTask = null;
     }
 
-    /// <summary>
-    /// Loop that triggers radar scans on an interval.
-    /// </summary>
     private async Task RunScanLoopAsync(CancellationToken ct)
     {
-        using var timer = new PeriodicTimer(ScanInterval);
-        while (!ct.IsCancellationRequested && await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        try
         {
-            await TriggerScan(ct).ConfigureAwait(false);
+            using var timer = new PeriodicTimer(ScanInterval);
+            while (!ct.IsCancellationRequested && await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                await TriggerScan(ct).ConfigureAwait(false);
+            }
         }
+        catch (OperationCanceledException) { }
     }
 
-    /// <summary>
-    /// Requests a sweep measurement from the hub.
-    /// </summary>
-    /// <param name="cancellationToken">Token used to cancel the sweep.</param>
-    private async Task TriggerScan(CancellationToken cancellationToken = default)
+    private async Task TriggerScan(CancellationToken ct)
     {
-        if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
-        {
-            return;
-        }
+        if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected) return;
 
         try
         {
-            if (_componentCts is null)
-            {
-                await _hubConnection.InvokeAsync(nameof(TobotHub.FindClosestObject), SamplesPerReading, SweepIncrement, cancellationToken).ConfigureAwait(false);
-                return;
-            }
+            using var linked = _componentCts is not null
+                ? CancellationTokenSource.CreateLinkedTokenSource(ct, _componentCts.Token)
+                : CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-            using var linkedCts = cancellationToken.CanBeCanceled
-                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _componentCts.Token)
-                : CancellationTokenSource.CreateLinkedTokenSource(_componentCts.Token);
-
-            await _hubConnection.InvokeAsync(nameof(TobotHub.FindClosestObject), SamplesPerReading, SweepIncrement, linkedCts.Token).ConfigureAwait(false);
+            await _hubConnection.InvokeAsync(nameof(TobotHub.FindClosestObject), SamplesPerReading, SweepIncrement, linked.Token).ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
-            _errorMessage = ex.Message;
-        }
+        catch { }
     }
 
-    /// <summary>
-    /// Toggles automatic scanning on or off.
-    /// </summary>
-    private async Task ToggleAutoScan()
-    {
-        _autoScanEnabled = !_autoScanEnabled;
-        if (_autoScanEnabled)
-        {
-            StartScanLoop();
-            await TriggerScan().ConfigureAwait(false);
-        }
-        else
-        {
-            StopScanLoop();
-        }
-    }
-
-    /// <summary>
-    /// Disposes hub connections and background scan tasks.
-    /// </summary>
     public async ValueTask DisposeAsync()
     {
         StopScanLoop();
@@ -378,257 +243,45 @@
 }
 
 <style>
-    @@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap');
-
-    :root {
-        --radar-bg: #0a0f0d;
-        --radar-panel: #0f1816;
-        --radar-accent: #5bffb0;
-        --radar-accent-soft: rgba(91, 255, 176, 0.35);
-        --radar-grid: rgba(91, 255, 176, 0.25);
-        --radar-glow: rgba(91, 255, 176, 0.55);
-        --radar-danger: #ff5f57;
-        --radar-text: #d6fff0;
-        --radar-muted: rgba(214, 255, 240, 0.65);
-    }
-
-    .radar-page {
-        min-height: 100vh;
-        background:
-            radial-gradient(circle at 20% 20%, rgba(91, 255, 176, 0.12), transparent 45%),
-            radial-gradient(circle at 80% 0%, rgba(91, 255, 176, 0.08), transparent 35%),
-            linear-gradient(180deg, #050807, #0a0f0d 55%, #050807 100%);
-        color: var(--radar-text);
-        padding: 32px;
-        font-family: "Orbitron", "Eurostile", "Bank Gothic", sans-serif;
-    }
-
-    .radar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 28px;
-    }
-
-    .radar-title {
-        font-size: clamp(26px, 4vw, 38px);
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-
-    .radar-subtitle {
-        color: var(--radar-muted);
-        margin-top: 4px;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-    }
-
-    .radar-status {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .status-pill {
-        padding: 8px 12px;
-        border: 1px solid rgba(91, 255, 176, 0.35);
-        border-radius: 999px;
-        background: rgba(10, 20, 17, 0.7);
-        font-size: 12px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-
-    .status-pill.ok {
-        box-shadow: 0 0 12px rgba(91, 255, 176, 0.4);
-    }
-
-    .status-pill.down {
-        border-color: rgba(255, 95, 87, 0.6);
-        color: #ffd7d5;
-    }
-
-    .radar-body {
-        display: grid;
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-        gap: 28px;
-        align-items: center;
-    }
-
-    .radar-display {
-        position: relative;
-        width: min(72vw, 520px);
-        aspect-ratio: 1;
-        border-radius: 50%;
-        background: radial-gradient(circle at center, rgba(6, 16, 12, 0.9), rgba(5, 8, 7, 0.95) 70%);
-        border: 1px solid rgba(91, 255, 176, 0.3);
-        box-shadow:
-            0 0 40px rgba(0, 0, 0, 0.6),
-            inset 0 0 60px rgba(91, 255, 176, 0.2);
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: #050a05;
         overflow: hidden;
-        clip-path: polygon(0 0, 50% 100%, 100% 0);
     }
 
-    .radar-sweep {
-        position: absolute;
-        inset: -5%;
-        border-radius: 50%;
-        background: conic-gradient(from -90deg, rgba(91, 255, 176, 0.35), rgba(91, 255, 176, 0.02) 35deg, transparent 60deg);
-        animation: radar-spin 4s linear infinite;
-        mix-blend-mode: screen;
-        clip-path: polygon(0 0, 50% 100%, 100% 0);
+    .radar-screen {
+        width: 800px;
+        height: 480px;
+        background: #050a05;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 0;
+        left: 0;
     }
 
-    .radar-grid,
-    .radar-blips {
-        position: absolute;
-        inset: 0;
+    .radar-svg {
         width: 100%;
-        height: 100%;
-    }
-
-    .grid-ring,
-    .grid-arc,
-    .grid-line {
-        fill: none;
-        stroke: var(--radar-grid);
-        stroke-width: 1;
-    }
-
-    .grid-line {
-        stroke-dasharray: 4 6;
-    }
-
-    .blip-core {
-        fill: var(--radar-accent);
-        filter: drop-shadow(0 0 6px var(--radar-glow));
-    }
-
-    .blip-pulse {
-        fill: none;
-        stroke: var(--radar-accent);
-        stroke-width: 1.5;
-        animation: blip-pulse 1.6s ease-out infinite;
-    }
-
-    .radar-readout {
-        padding: 24px;
-        border-radius: 18px;
-        background: var(--radar-panel);
-        border: 1px solid rgba(91, 255, 176, 0.2);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-    }
-
-    .readout-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        padding: 10px 0;
-        border-bottom: 1px solid rgba(91, 255, 176, 0.1);
-    }
-
-    .readout-row:last-of-type {
-        border-bottom: none;
-    }
-
-    .readout-row .label {
-        color: var(--radar-muted);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .readout-row .value {
-        font-size: 18px;
-        font-weight: 600;
-    }
-
-    .radar-controls {
-        display: flex;
-        gap: 12px;
-        margin-top: 20px;
-    }
-
-    .action {
+        max-width: 760px;
+        height: auto;
         flex: 1;
-        padding: 12px 14px;
-        border-radius: 999px;
-        border: none;
-        background: var(--radar-accent);
-        color: #05120c;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .action:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .action:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(91, 255, 176, 0.35);
-    }
-
-    .action.ghost {
-        background: transparent;
-        border: 1px solid rgba(91, 255, 176, 0.5);
-        color: var(--radar-text);
-    }
-
-    .readout-note {
-        margin-top: 14px;
-        color: var(--radar-muted);
-        font-size: 12px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-
-    .readout-error {
-        margin-top: 10px;
-        color: #ffd7d5;
-        font-size: 12px;
-    }
-
-    @@keyframes radar-spin {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    @@keyframes blip-pulse {
-        0% {
-            opacity: 0.9;
-            r: 6;
-        }
-        70% {
-            opacity: 0.25;
-            r: 16;
-        }
-        100% {
-            opacity: 0;
-            r: 22;
-        }
-    }
-
-    @@media (max-width: 900px) {
-        .radar-body {
-            grid-template-columns: 1fr;
-        }
-
-        .radar-display {
-            width: min(85vw, 440px);
-            margin: 0 auto;
-        }
+    .detection-info {
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(10, 30, 10, 0.85);
+        border: 1px solid #2a5a2a;
+        border-radius: 4px;
+        padding: 6px 14px;
+        font-family: monospace;
+        font-size: 13px;
+        color: #5aaa5a;
+        letter-spacing: 0.5px;
     }
 </style>
