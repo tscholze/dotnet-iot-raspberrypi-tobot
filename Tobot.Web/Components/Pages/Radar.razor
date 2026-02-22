@@ -168,7 +168,7 @@
             _distanceCm = distance;
             _panAngle = panAngle;
             _sweepAngle = panAngle;
-            _hasDetection = distance <= MaxDistanceCm;
+            _hasDetection = true;
             InvokeAsync(StateHasChanged);
         });
 
