@@ -22,13 +22,16 @@
         <div class="radar-display">
             <div class="radar-sweep"></div>
             <svg class="radar-grid" viewBox="0 0 200 200" aria-hidden="true">
-                <circle class="grid-ring" cx="100" cy="100" r="90" />
-                <circle class="grid-ring" cx="100" cy="100" r="60" />
-                <circle class="grid-ring" cx="100" cy="100" r="30" />
+                <!-- Forward-facing concentric arcs -->
+                <path class="grid-arc" d="M 100 10 A 90 90 0 0 1 100 190" />
+                <path class="grid-arc" d="M 100 40 A 60 60 0 0 1 100 160" />
+                <path class="grid-arc" d="M 100 70 A 30 30 0 0 1 100 130" />
+                <!-- Center line (0 degrees) -->
                 <line class="grid-line" x1="100" y1="10" x2="100" y2="190" />
-                <line class="grid-line" x1="10" y1="100" x2="190" y2="100" />
-                <line class="grid-line" x1="100" y1="100" x2="170" y2="30" />
-                <line class="grid-line" x1="100" y1="100" x2="30" y2="30" />
+                <!-- Left edge (-90 degrees) -->
+                <line class="grid-line" x1="10" y1="100" x2="100" y2="100" />
+                <!-- Right edge (+90 degrees) -->
+                <line class="grid-line" x1="190" y1="100" x2="100" y2="100" />
             </svg>
             <svg class="radar-blips" viewBox="0 0 200 200" role="img" aria-label="Radar detection">
                 @if (HasDetection)
@@ -125,7 +128,7 @@
     /// <summary>
     /// Maximum radar range used to normalize the blip position.
     /// </summary>
-    private const double MaxDistanceCm = 120.0;
+    private const double MaxDistanceCm = 60.0;
 
     /// <summary>
     /// Degrees to increment between sweep measurements.
@@ -441,15 +444,17 @@
             0 0 40px rgba(0, 0, 0, 0.6),
             inset 0 0 60px rgba(91, 255, 176, 0.2);
         overflow: hidden;
+        clip-path: polygon(0 0, 50% 100%, 100% 0);
     }
 
     .radar-sweep {
         position: absolute;
         inset: -5%;
         border-radius: 50%;
-        background: conic-gradient(from 0deg, rgba(91, 255, 176, 0.35), rgba(91, 255, 176, 0.02) 35deg, transparent 60deg);
+        background: conic-gradient(from -90deg, rgba(91, 255, 176, 0.35), rgba(91, 255, 176, 0.02) 35deg, transparent 60deg);
         animation: radar-spin 4s linear infinite;
         mix-blend-mode: screen;
+        clip-path: polygon(0 0, 50% 100%, 100% 0);
     }
 
     .radar-grid,
@@ -461,6 +466,7 @@
     }
 
     .grid-ring,
+    .grid-arc,
     .grid-line {
         fill: none;
         stroke: var(--radar-grid);
