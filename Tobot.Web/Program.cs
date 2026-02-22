@@ -17,6 +17,19 @@ builder.Services.AddHostedService<PiStatusBroadcastService>();
 
 var app = builder.Build();
 
+var controller = app.Services.GetRequiredService<TobotController>();
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+	try
+	{
+		controller.Stop();
+	}
+	catch
+	{
+		// Best-effort cleanup during shutdown.
+	}
+});
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 

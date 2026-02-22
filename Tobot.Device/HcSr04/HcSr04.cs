@@ -162,6 +162,7 @@ public sealed class HcSr04Sensor : IDisposable
 	/// <param name="panTilt">The Pan-Tilt HAT instance to control the sensor's direction.</param>
 	/// <param name="samples">Number of samples to average per pan angle. Default is 5.</param>
 	/// <param name="sweepIncrement">Degrees to increment between pan measurements. Default is 5° (smaller = finer resolution).</param>
+	/// <param name="cancellationToken">Token used to cancel the sweep early.</param>
 	/// <returns>
 	/// A <see cref="DetectedObject"/> containing the distance and direction of the closest object,
 	/// or <c>null</c> if no object is detected during the sweep.
@@ -171,7 +172,7 @@ public sealed class HcSr04Sensor : IDisposable
 	/// at each pan angle to allow the servo to settle before taking a measurement. Objects are detected
 	/// left, center, or right based on the pan angle where the closest distance is found.
 	/// </remarks>
-	public DetectedObject? FindClosestObject(PanTiltHat.PanTiltHat panTilt, int samples = DefaultSamplesPerReading, int sweepIncrement = 5)
+	public DetectedObject? FindClosestObject(PanTiltHat.PanTiltHat panTilt, int samples = DefaultSamplesPerReading, int sweepIncrement = 5, CancellationToken cancellationToken = default)
 	{
 		EnsureNotDisposed();
 
@@ -193,8 +194,16 @@ public sealed class HcSr04Sensor : IDisposable
 		// Sweep from left to right
 		for (int angle = LeftBound; angle <= RightBound; angle += sweepIncrement)
 		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return closest;
+			}
+
 			panTilt.Pan(angle);
-			Thread.Sleep(ServoSettleMs);
+			if (cancellationToken.WaitHandle.WaitOne(ServoSettleMs))
+			{
+				return closest;
+			}
 
 			if (TryReadDistance(out double distance, samples))
 			{

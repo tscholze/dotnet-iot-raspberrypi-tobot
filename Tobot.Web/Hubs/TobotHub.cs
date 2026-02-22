@@ -173,12 +173,22 @@ public class TobotHub(ExplorerHat explorerHat, Device.TobotController controller
     /// <summary>
     /// Performs a detection sweep and broadcasts the result.
     /// </summary>
-    public async Task<DetectedObject?> FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5)
+    public async Task<DetectedObject?> FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5, CancellationToken cancellationToken = default)
     {
-        var result = _controller.FindClosestObject(samples, sweepIncrement);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+
+        var result = _controller.FindClosestObject(samples, sweepIncrement, cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+
         if (result != null)
         {
-            await Clients.All.SendAsync(TobotHubEvents.ObjectDetectionCompleted, result.Distance, result.PanAngle, result.Direction.ToString());
+            await Clients.All.SendAsync(TobotHubEvents.ObjectDetectionCompleted, result.Distance, result.PanAngle, result.Direction.ToString(), cancellationToken);
         }
 
         return result;

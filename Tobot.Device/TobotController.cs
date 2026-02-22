@@ -458,6 +458,7 @@ public sealed class TobotController : IDisposable
 	/// </summary>
 	/// <param name="samples">Number of samples to average per pan angle. Default is 5.</param>
 	/// <param name="sweepIncrement">Degrees to increment between pan measurements. Default is 5° (smaller = finer resolution).</param>
+	/// <param name="cancellationToken">Token used to cancel the sweep early.</param>
 	/// <returns>
 	/// A <see cref="DetectedObject"/> containing the distance and direction of the closest object,
 	/// or <c>null</c> if no object is detected during the sweep.
@@ -467,10 +468,20 @@ public sealed class TobotController : IDisposable
 	/// to allow the servo to settle before taking a measurement. Objects are classified as left, center,
 	/// or right based on the pan angle where the closest distance is found.
 	/// </remarks>
-	public DetectedObject? FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5)
+	public DetectedObject? FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5, CancellationToken cancellationToken = default)
 	{
 		EnsureNotDisposed();
-		return UltrasonicSensor.FindClosestObject(PanTiltHat, samples, sweepIncrement);
+		return UltrasonicSensor.FindClosestObject(PanTiltHat, samples, sweepIncrement, cancellationToken);
+	}
+
+	/// <summary>
+	/// Disables both pan and tilt servos to stop movement and reduce power draw.
+	/// </summary>
+	public void DisablePanTilt()
+	{
+		EnsureNotDisposed();
+		PanTiltHat.ServoEnable(1, false);
+		PanTiltHat.ServoEnable(2, false);
 	}
 
 	/// <summary>
@@ -590,6 +601,7 @@ public sealed class TobotController : IDisposable
 		EnsureNotDisposed();
 		StopRandomDrive();
 		StopMotors();
+		DisablePanTilt();
 		SetAllLeds(false);
 		SetAllDigitalOutputs(false);
 	}

@@ -91,6 +91,11 @@
     private Task? _scanTask;
 
     /// <summary>
+    /// Cancellation source that tracks the component lifetime.
+    /// </summary>
+    private CancellationTokenSource? _componentCts;
+
+    /// <summary>
     /// Last detected distance in centimeters.
     /// </summary>
     private double? _distanceCm;
@@ -230,6 +235,8 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        _componentCts = new CancellationTokenSource();
+
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
             .WithAutomaticReconnect()
@@ -297,14 +304,15 @@
         using var timer = new PeriodicTimer(ScanInterval);
         while (!ct.IsCancellationRequested && await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
         {
-            await TriggerScan().ConfigureAwait(false);
+            await TriggerScan(ct).ConfigureAwait(false);
         }
     }
 
     /// <summary>
     /// Requests a sweep measurement from the hub.
     /// </summary>
-    private async Task TriggerScan()
+    /// <param name="cancellationToken">Token used to cancel the sweep.</param>
+    private async Task TriggerScan(CancellationToken cancellationToken = default)
     {
         if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
         {
@@ -313,7 +321,17 @@
 
         try
         {
-            await _hubConnection.InvokeAsync(nameof(TobotHub.FindClosestObject), SamplesPerReading, SweepIncrement).ConfigureAwait(false);
+            if (_componentCts is null)
+            {
+                await _hubConnection.InvokeAsync(nameof(TobotHub.FindClosestObject), SamplesPerReading, SweepIncrement, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            using var linkedCts = cancellationToken.CanBeCanceled
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _componentCts.Token)
+                : CancellationTokenSource.CreateLinkedTokenSource(_componentCts.Token);
+
+            await _hubConnection.InvokeAsync(nameof(TobotHub.FindClosestObject), SamplesPerReading, SweepIncrement, linkedCts.Token).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -344,6 +362,13 @@
     public async ValueTask DisposeAsync()
     {
         StopScanLoop();
+
+        if (_componentCts is not null)
+        {
+            _componentCts.Cancel();
+            _componentCts.Dispose();
+            _componentCts = null;
+        }
 
         if (_hubConnection is not null)
         {
