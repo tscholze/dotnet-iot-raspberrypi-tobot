@@ -10,14 +10,9 @@
 <PageTitle>Tobot Bot</PageTitle>
 
 <div class="bot-screen @GetMoodClass()" @onclick="HandleFullscreenClick">
-    <div class="ambient-glow"></div>
-
     <div class="distance-indicator">@_distanceText</div>
 
     <div class="feature-stage">
-        <div class="blush blush-left"></div>
-        <div class="blush blush-right"></div>
-
         <div class="eyes-row">
             <div class="eye-wrapper left-eye">
                 <div class="eye">
@@ -54,11 +49,6 @@
             </div>
         </div>
 
-        <div class="sparkles" aria-hidden="true">
-            <span class="sparkle s1"></span>
-            <span class="sparkle s2"></span>
-            <span class="sparkle s3"></span>
-        </div>
     </div>
 </div>
 
@@ -112,16 +102,6 @@
         cursor: pointer;
     }
 
-    .ambient-glow {
-        position: absolute;
-        width: 620px;
-        height: 980px;
-        border-radius: 44% 56% 48% 52% / 56% 47% 53% 44%;
-        background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.04) 62%, transparent 75%);
-        filter: blur(2px);
-        animation: pulse-ambient 4s ease-in-out infinite;
-    }
-
     .distance-indicator {
         position: absolute;
         top: 26px;
@@ -142,25 +122,6 @@
         width: 620px;
         height: 860px;
         position: relative;
-        animation: feature-float 4.2s ease-in-out infinite;
-    }
-
-    .blush {
-        position: absolute;
-        top: 500px;
-        width: 82px;
-        height: 52px;
-        border-radius: 50%;
-        background: radial-gradient(circle at center, rgba(255, 135, 176, 0.45), rgba(255, 135, 176, 0.1) 70%, transparent 100%);
-        animation: blush-breathe 2.8s ease-in-out infinite;
-    }
-
-    .blush-left {
-        left: 82px;
-    }
-
-    .blush-right {
-        right: 82px;
     }
 
     .eyes-row {
@@ -178,18 +139,6 @@
         width: 250px;
         height: 250px;
         animation: eye-wrapper-bob 3.2s ease-in-out infinite;
-    }
-
-    .eye-wrapper::before {
-        content: "";
-        position: absolute;
-        top: -16px;
-        left: 34px;
-        width: 180px;
-        height: 34px;
-        border-top: 8px solid rgba(123, 75, 153, 0.9);
-        border-radius: 50%;
-        transform: rotate(-4deg);
     }
 
     .right-eye {
@@ -366,40 +315,6 @@
         transform: rotate(-14deg);
     }
 
-    .sparkles {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-    }
-
-    .sparkle {
-        position: absolute;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(139, 231, 255, 0.8) 45%, transparent 75%);
-        animation: sparkle-float 2.2s ease-in-out infinite;
-    }
-
-    .sparkle.s1 {
-        top: 220px;
-        left: 44px;
-    }
-
-    .sparkle.s2 {
-        top: 260px;
-        right: 42px;
-        animation-delay: 0.35s;
-    }
-
-    .sparkle.s3 {
-        top: 430px;
-        left: 50%;
-        width: 10px;
-        height: 10px;
-        animation-delay: 0.6s;
-    }
-
     .status-bar {
         position: fixed;
         bottom: 14px;
@@ -416,10 +331,6 @@
         opacity: 0.85;
         pointer-events: none;
         text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
-    }
-
-    .bot-screen.mood-happy .feature-stage {
-        animation-duration: 2.6s;
     }
 
     .bot-screen.mood-happy .eye {
@@ -447,11 +358,6 @@
 
     .bot-screen.mood-happy .tongue {
         animation: tongue-bounce 0.7s ease-in-out infinite;
-    }
-
-    .bot-screen.mood-happy .blush {
-        opacity: 1;
-        transform: scale(1.15);
     }
 
     .bot-screen.mood-happy .nose {
@@ -549,43 +455,6 @@
 
     .bot-screen.mood-angry .tongue {
         opacity: 0;
-    }
-
-    @@keyframes pulse-ambient {
-        0%,
-        100% {
-            transform: scale(1);
-            opacity: 0.9;
-        }
-
-        50% {
-            transform: scale(1.04);
-            opacity: 1;
-        }
-    }
-
-    @@keyframes feature-float {
-        0%,
-        100% {
-            transform: translateY(0px) rotate(0deg);
-        }
-
-        50% {
-            transform: translateY(-12px) rotate(0.25deg);
-        }
-    }
-
-    @@keyframes blush-breathe {
-        0%,
-        100% {
-            opacity: 0.72;
-            transform: scale(1);
-        }
-
-        50% {
-            opacity: 0.96;
-            transform: scale(1.08);
-        }
     }
 
     @@keyframes eye-wrapper-bob {
@@ -768,18 +637,6 @@
         }
     }
 
-    @@keyframes sparkle-float {
-        0%,
-        100% {
-            transform: translateY(0px) scale(1);
-            opacity: 0.8;
-        }
-
-        50% {
-            transform: translateY(-8px) scale(1.25);
-            opacity: 1;
-        }
-    }
 </style>
 
 @code {
