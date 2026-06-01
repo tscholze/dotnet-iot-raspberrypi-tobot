@@ -1,4 +1,6 @@
+@page "/"
 @page "/bot"
+@page "/bot-portrait"
 @implements IAsyncDisposable
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client
@@ -8,107 +10,158 @@
 
 <PageTitle>Tobot Bot</PageTitle>
 
-<div class="eyes-container @GetMoodClass()" @onclick="HandleFullscreenClick">
+<div class="bot-screen @GetMoodClass()" @onclick="HandleFullscreenClick">
     <div class="distance-indicator">@_distanceText</div>
-    <div class="eye-wrapper left-eye">
-        <div class="eye">
-            <div class="eyeball">
-                <div class="pupil"></div>
-                <div class="shine"></div>
-            </div>
-            <div class="eyelid"></div>
-        </div>
-    </div>
 
-    <div class="eye-wrapper right-eye">
-        <div class="eye">
-            <div class="eyeball">
-                <div class="pupil"></div>
-                <div class="shine"></div>
+    <div class="feature-stage">
+        <div class="eyes-row">
+            <div class="eye-wrapper left-eye">
+                <div class="eye">
+                    <div class="eyeball">
+                        <div class="pupil"></div>
+                        <div class="shine"></div>
+                    </div>
+                    <div class="eyelid"></div>
+                </div>
             </div>
-            <div class="eyelid"></div>
+
+            <div class="eye-wrapper right-eye">
+                <div class="eye">
+                    <div class="eyeball">
+                        <div class="pupil"></div>
+                        <div class="shine"></div>
+                    </div>
+                    <div class="eyelid"></div>
+                </div>
+            </div>
         </div>
+
+        <div class="nose" aria-hidden="true"></div>
+
+        <div class="mouth-zone">
+            <div class="mouth">
+                <div class="mouth-inner">
+                    <div class="tongue"></div>
+                    <div class="tooth tooth-left"></div>
+                    <div class="tooth tooth-right"></div>
+                </div>
+                <div class="mouth-cheek-line left"></div>
+                <div class="mouth-cheek-line right"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <div class="status-bar">
     <span>@_wifiSsidDisplay</span>
-    <span>• @_wifiIpDisplay</span>
-    <span>• CPU @_cpuLoadDisplay</span>
-    <span>• MEM @_memLoadDisplay</span>
-    </div>
+    <span>- @_wifiIpDisplay</span>
+    <span>- CPU @_cpuLoadDisplay</span>
+    <span>- MEM @_memLoadDisplay</span>
+</div>
 
 <style>
-    * {
+    html,
+    body {
         margin: 0;
-        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #130f1f;
+    }
+
+    * {
         box-sizing: border-box;
     }
 
-    .eyes-container {
-        width: 1280px;
-        height: 720px;
-        background: #000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 120px;
-        overflow: hidden;
+    .bot-screen {
+        --bg1: #1d1536;
+        --bg2: #100b23;
+        --shell: #fff9ff;
+        --shell-outline: #ffcde9;
+        --eye-white: #ffffff;
+        --pupil-a: #3f2a65;
+        --pupil-b: #181129;
+        --accent-a: #ff8ec7;
+        --accent-b: #8be7ff;
+        --mouth-main: #45234f;
+        --mouth-inner: #7c3d7d;
+        --tongue: #ff77b3;
+
+        width: 720px;
+        height: 1280px;
         position: fixed;
         top: 0;
         left: 0;
+        display: grid;
+        place-items: center;
+        background:
+            radial-gradient(1200px 900px at 50% -10%, rgba(255, 148, 205, 0.35), transparent 55%),
+            radial-gradient(900px 800px at 10% 100%, rgba(122, 211, 255, 0.28), transparent 60%),
+            linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+        overflow: hidden;
         cursor: pointer;
     }
 
     .distance-indicator {
         position: absolute;
-        top: 20px;
-        left: 20px;
-        padding: 8px 12px;
-        background: rgba(0, 0, 0, 0.6);
-        color: #8df0ff;
-        font-family: ui-monospace, Menlo, Consolas, monospace;
-        font-size: 20px;
-        border: 1px solid rgba(141, 240, 255, 0.4);
-        border-radius: 6px;
-        box-shadow: 0 0 12px rgba(141, 240, 255, 0.3);
-        z-index: 1000;
+        top: 26px;
+        left: 26px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.26);
+        background: rgba(10, 8, 22, 0.55);
+        color: #d7f7ff;
+        font-family: "Comic Sans MS", "Trebuchet MS", sans-serif;
+        font-size: 24px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 0 18px rgba(139, 231, 255, 0.45);
+        z-index: 5;
+    }
+
+    .feature-stage {
+        width: 620px;
+        height: 860px;
+        position: relative;
+    }
+
+    .eyes-row {
+        position: absolute;
+        top: 170px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 540px;
+        display: flex;
+        justify-content: space-between;
     }
 
     .eye-wrapper {
         position: relative;
-        animation: float 4s ease-in-out infinite;
-    }
-
-    .left-eye {
-        animation-delay: 0s;
+        width: 250px;
+        height: 250px;
+        animation: eye-wrapper-bob 3.2s ease-in-out infinite;
     }
 
     .right-eye {
-        animation-delay: 0.2s;
+        animation-delay: 0.12s;
     }
 
     .eye {
         position: relative;
-        width: 400px;
-        height: 400px;
-        background: #fff;
+        width: 100%;
+        height: 100%;
         border-radius: 50%;
-        overflow: hidden;
+        background: var(--eye-white);
         box-shadow:
-            0 0 40px rgba(255, 255, 255, 0.3),
-            inset 0 -20px 40px rgba(0, 0, 0, 0.1);
-        animation: blink 5s ease-in-out infinite;
+            0 0 24px rgba(255, 255, 255, 0.7),
+            inset 0 -16px 24px rgba(93, 56, 122, 0.1);
+        overflow: hidden;
     }
 
     .eyeball {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 100%;
-        height: 100%;
-        animation: look 6s ease-in-out infinite;
+        inset: 0;
+        animation: look-around 5.5s ease-in-out infinite;
     }
 
     .pupil {
@@ -116,356 +169,400 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 80px;
-        height: 80px;
-        background: radial-gradient(circle at 35% 35%, #2c3e50 0%, #000 100%);
+        width: 78px;
+        height: 78px;
         border-radius: 50%;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        background: radial-gradient(circle at 32% 30%, var(--pupil-a) 0%, var(--pupil-b) 78%);
+        box-shadow: 0 0 12px rgba(24, 17, 41, 0.6);
     }
 
     .pupil::after {
-        content: '';
+        content: "";
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        background: #000;
+        top: 20px;
+        left: 20px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
     }
 
     .shine {
         position: absolute;
-        top: 30%;
-        left: 40%;
-        width: 35px;
-        height: 35px;
-        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+        top: 58px;
+        left: 72px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
-        pointer-events: none;
-    }
-
-    .shine::after {
-        content: '';
-        position: absolute;
-        top: 50px;
-        left: -10px;
-        width: 15px;
-        height: 15px;
-        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, transparent 60%);
-        border-radius: 50%;
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.25) 65%, transparent 80%);
     }
 
     .eyelid {
         position: absolute;
-        top: -400px;
+        top: -250px;
         left: 0;
         width: 100%;
         height: 100%;
-        background: #000;
         border-radius: 50%;
-        z-index: 10;
-        transition: top 0.15s ease-out;
-    }
-
-    /* Animations */
-    @@keyframes float {
-
-        0%,
-        100% {
-            transform: translateY(0px) scale(1);
-        }
-
-        50% {
-            transform: translateY(-8px) scale(1.02);
-        }
-    }
-
-    @@keyframes blink {
-
-        0%,
-        10%,
-        20%,
-        100% {
-            /* Eyes open - eyelid stays up */
-        }
-
-        12%,
-        18% {
-            /* Quick blink */
-        }
-
-        12% .eyelid {
-            top: 0;
-        }
-
-        18% .eyelid {
-            top: -400px;
-        }
-    }
-
-    .eye-wrapper:nth-child(1) .eye {
-        animation: blink 4.5s ease-in-out infinite;
-    }
-
-    .eye-wrapper:nth-child(2) .eye {
-        animation: blink 4.5s ease-in-out infinite 0.1s;
-    }
-
-    /* Blink effect using steps */
-    @@keyframes blink {
-
-        0%,
-        88%,
-        92%,
-        100% {
-            /* Do nothing, eyes open */
-        }
-
-        90% {
-            /* Close eyes briefly */
-        }
-    }
-
-    @@keyframes look {
-
-        0%,
-        100% {
-            transform: translate(-50%, -50%);
-        }
-
-        20% {
-            transform: translate(-48%, -52%);
-        }
-
-        40% {
-            transform: translate(-52%, -50%);
-        }
-
-        60% {
-            transform: translate(-50%, -48%);
-        }
-
-        80% {
-            transform: translate(-51%, -51%);
-        }
-    }
-
-    /* Manual blink trigger via CSS animation */
-    @@keyframes blink-eyelid {
-
-        0%,
-        45%,
-        55%,
-        100% {
-            top: -400px;
-        }
-
-        48%,
-        52% {
-            top: 0;
-        }
-    }
-
-    .eye {
-        position: relative;
-    }
-
-    .eyelid {
-        animation: blink-eyelid 4s ease-in-out infinite;
-    }
-
-    .left-eye .eyelid {
-        animation-delay: 0s;
+        background: linear-gradient(180deg, #ffd4eb 0%, #fff2fa 100%);
+        border-bottom: 3px solid #ffb3dc;
+        animation: blink-eyelid 3.8s ease-in-out infinite;
     }
 
     .right-eye .eyelid {
         animation-delay: 0.08s;
     }
 
-    /* Mood-specific styles */
-    .eyes-container.mood-happy .eye {
+    .mouth-zone {
+        position: absolute;
+        left: 50%;
+        top: 560px;
+        transform: translateX(-50%);
+        width: 320px;
+        height: 170px;
+        display: grid;
+        place-items: center;
+    }
+
+    .nose {
+        position: absolute;
+        left: 50%;
+        top: 490px;
+        width: 24px;
+        height: 18px;
+        transform: translateX(-50%);
+        border-radius: 50% 50% 62% 62%;
+        background: linear-gradient(180deg, #ff9ac6 0%, #e870a7 100%);
+        box-shadow: 0 0 10px rgba(255, 141, 191, 0.45);
+        opacity: 0.9;
+    }
+
+    .nose::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 8px;
+        width: 8px;
+        height: 5px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.7);
+    }
+
+    .mouth {
+        width: 220px;
+        height: 118px;
+        position: relative;
+        border: 5px solid var(--mouth-main);
+        border-top: 0;
+        border-radius: 0 0 110px 110px;
+        background: linear-gradient(180deg, #2d1635 0%, #1f1128 100%);
+        box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.35);
+        animation: mouth-neutral 2.8s ease-in-out infinite;
+        overflow: hidden;
+    }
+
+    .mouth-inner {
+        position: absolute;
+        inset: 14px 14px 10px;
+        border-radius: 0 0 86px 86px;
+        background: linear-gradient(180deg, var(--mouth-inner) 0%, #5f2f6b 100%);
+        overflow: hidden;
+    }
+
+    .tongue {
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 98px;
+        height: 56px;
+        border-radius: 56px 56px 18px 18px;
+        background: linear-gradient(180deg, var(--tongue) 0%, #ff4f9f 100%);
+    }
+
+    .tooth {
+        position: absolute;
+        top: 0;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .tooth-left {
+        left: 74px;
+    }
+
+    .tooth-right {
+        right: 74px;
+    }
+
+    .mouth-cheek-line {
+        position: absolute;
+        top: 62px;
+        width: 22px;
+        height: 14px;
+        border-bottom: 4px solid #a85283;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .mouth-cheek-line.left {
+        left: -16px;
+        transform: rotate(14deg);
+    }
+
+    .mouth-cheek-line.right {
+        right: -16px;
+        transform: rotate(-14deg);
+    }
+
+    .status-bar {
+        position: fixed;
+        bottom: 14px;
+        left: 14px;
+        right: 14px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+        color: rgba(235, 246, 255, 0.92);
+        font-family: "Trebuchet MS", "Comic Sans MS", sans-serif;
+        font-size: 16px;
+        letter-spacing: 0.2px;
+        opacity: 0.85;
+        pointer-events: none;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .bot-screen.mood-happy .eye {
         border-radius: 50% 50% 40% 40%;
-        transform: scaleY(0.7) rotate(0deg);
-        background: linear-gradient(180deg, #fff 0%, #fffacd 100%);
-        animation: happy-bounce 0.6s ease-in-out infinite;
+        transform: scaleY(0.8);
+        background: linear-gradient(180deg, #ffffff 0%, #fff3c9 100%);
     }
 
-    .eyes-container.mood-happy .pupil {
-        width: 40px;
-        height: 40px;
-        background: radial-gradient(circle at 30% 30%, #654321 0%, #000 100%);
-        animation: sparkle 1s ease-in-out infinite;
+    .bot-screen.mood-happy .pupil {
+        width: 52px;
+        height: 52px;
+        animation: happy-sparkle 0.75s ease-in-out infinite;
     }
 
-    .eyes-container.mood-happy .eyeball {
-        animation: look-happy 0.8s ease-in-out infinite;
+    .bot-screen.mood-happy .eyeball {
+        animation: look-happy 1s ease-in-out infinite;
     }
 
-    .eyes-container.mood-happy .eyelid {
-        animation: happy-wink 2s ease-in-out infinite;
+    .bot-screen.mood-happy .mouth {
+        width: 280px;
+        height: 150px;
+        border-color: #5a2a6b;
+        animation: mouth-happy 0.7s ease-in-out infinite;
     }
 
-    .eyes-container.mood-terrified .eye {
-        width: 500px;
-        height: 500px;
-        border-radius: 50%;
-        background: linear-gradient(180deg, #fff 0%, #e0f0ff 100%);
-        animation: tremble 0.1s ease-in-out infinite, bulge 0.5s ease-in-out infinite alternate;
-        box-shadow: 0 0 40px rgba(100, 150, 255, 0.5);
+    .bot-screen.mood-happy .tongue {
+        animation: tongue-bounce 0.7s ease-in-out infinite;
     }
 
-    .eyes-container.mood-terrified .pupil {
-        width: 180px;
-        height: 180px;
-        background: radial-gradient(circle at 35% 35%, #000 0%, #000 100%);
-        animation: dilate 0.4s ease-in-out infinite alternate;
+    .bot-screen.mood-happy .nose {
+        transform: translateX(-50%) scale(1.08);
+        filter: brightness(1.08);
     }
 
-    .eyes-container.mood-terrified .eyeball {
-        animation: panic-dart 0.2s linear infinite;
+    .bot-screen.mood-terrified .eye {
+        transform: scale(1.15);
+        box-shadow: 0 0 34px rgba(147, 201, 255, 0.75), inset 0 -18px 26px rgba(55, 109, 180, 0.18);
     }
 
-    .eyes-container.mood-terrified .eyelid {
-        animation: none !important;
-        top: -600px !important;
+    .bot-screen.mood-terrified .pupil {
+        width: 102px;
+        height: 102px;
+        background: radial-gradient(circle at 32% 30%, #1b1b2b 0%, #000 100%);
+        animation: dilate 0.45s ease-in-out infinite alternate;
     }
 
-    .eyes-container.mood-angry .eye {
-        border-radius: 50%;
-        background: linear-gradient(180deg, #ffcccc 0%, #ff6666 100%);
-        transform: scaleX(1.1) scaleY(0.85) rotate(0deg);
-        animation: angry-pulse 0.8s ease-in-out infinite;
-        box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), inset 0 0 20px rgba(255, 0, 0, 0.2);
+    .bot-screen.mood-terrified .eyeball {
+        animation: panic-dart 0.23s linear infinite;
     }
 
-    .eyes-container.mood-angry .pupil {
-        width: 30px;
-        height: 50px;
-        background: radial-gradient(circle at 35% 35%, #8b0000 0%, #000 100%);
-        border-radius: 50%;
-        animation: angry-contract 1s ease-in-out infinite;
+    .bot-screen.mood-terrified .eyelid {
+        animation: none;
+        top: -300px;
     }
 
-    .eyes-container.mood-angry .eyeball {
-        animation: look-angry 0.5s ease-in-out infinite, angry-intensify 1.5s ease-in-out infinite;
+    .bot-screen.mood-terrified .mouth {
+        width: 150px;
+        height: 160px;
+        border-radius: 80px;
+        border-top: 6px solid var(--mouth-main);
+        animation: mouth-gasp 0.18s ease-in-out infinite alternate;
     }
 
-    .eyes-container.mood-angry .eyelid {
-        animation: angry-squint 1s ease-in-out infinite;
-        transform: rotate(-15deg);
+    .bot-screen.mood-terrified .mouth-inner {
+        inset: 18px;
+        border-radius: 70px;
     }
 
-    @@keyframes happy-bounce {
+    .bot-screen.mood-terrified .tongue,
+    .bot-screen.mood-terrified .tooth,
+    .bot-screen.mood-terrified .mouth-cheek-line,
+    .bot-screen.mood-terrified .nose {
+        opacity: 0;
+    }
 
+    .bot-screen.mood-angry .eye {
+        border-radius: 45% 45% 55% 55%;
+        background: linear-gradient(180deg, #ffe3e3 0%, #ffc3c3 100%);
+        box-shadow: 0 0 28px rgba(255, 100, 100, 0.66), inset 0 -14px 24px rgba(173, 30, 30, 0.2);
+    }
+
+    .bot-screen.mood-angry .eyeball {
+        animation: look-angry 0.45s ease-in-out infinite;
+    }
+
+    .bot-screen.mood-angry .pupil {
+        width: 38px;
+        height: 58px;
+        border-radius: 48%;
+        background: radial-gradient(circle at 35% 35%, #780f0f 0%, #130606 100%);
+    }
+
+    .bot-screen.mood-angry .eyelid {
+        top: -180px;
+        transform: rotate(-14deg);
+    }
+
+    .bot-screen.mood-angry .mouth {
+        width: 250px;
+        height: 86px;
+        border-top: 6px solid var(--mouth-main);
+        border-bottom: 6px solid var(--mouth-main);
+        border-radius: 28px;
+        animation: mouth-grr 0.4s linear infinite;
+    }
+
+    .bot-screen.mood-angry .nose {
+        filter: saturate(1.4) brightness(0.9);
+    }
+
+    .bot-screen.mood-angry .mouth-inner {
+        border-radius: 20px;
+        inset: 14px 12px;
+        background: repeating-linear-gradient(
+            -45deg,
+            #7a2f43,
+            #7a2f43 12px,
+            #9e3f58 12px,
+            #9e3f58 24px
+        );
+    }
+
+    .bot-screen.mood-angry .tongue {
+        opacity: 0;
+    }
+
+    @@keyframes eye-wrapper-bob {
         0%,
         100% {
-            transform: scaleY(0.7) translateY(0);
+            transform: translateY(0px);
         }
 
         50% {
-            transform: scaleY(0.65) translateY(-10px);
+            transform: translateY(-8px);
         }
     }
 
-    @@keyframes sparkle {
-
+    @@keyframes look-around {
         0%,
         100% {
-            transform: scale(1);
+            transform: translate(0, 0);
+        }
+
+        20% {
+            transform: translate(-5px, -6px);
+        }
+
+        40% {
+            transform: translate(5px, -4px);
+        }
+
+        60% {
+            transform: translate(-4px, 5px);
+        }
+
+        80% {
+            transform: translate(4px, 4px);
+        }
+    }
+
+    @@keyframes blink-eyelid {
+        0%,
+        89%,
+        100% {
+            top: -230px;
+        }
+
+        92%,
+        95% {
+            top: 0;
+        }
+    }
+
+    @@keyframes mouth-neutral {
+        0%,
+        100% {
+            transform: scaleY(1) translateY(0);
+        }
+
+        50% {
+            transform: scaleY(0.93) translateY(2px);
+        }
+    }
+
+    @@keyframes happy-sparkle {
+        0%,
+        100% {
+            transform: translate(-50%, -50%) scale(1);
             opacity: 1;
         }
 
         50% {
-            transform: scale(1.3);
+            transform: translate(-50%, -50%) scale(1.3);
             opacity: 0.8;
         }
     }
 
     @@keyframes look-happy {
-
         0%,
         100% {
-            transform: translate(-50%, -50%) rotate(-8deg) scale(1.05);
+            transform: translate(0%, 0%) scale(1);
         }
 
         25% {
-            transform: translate(-45%, -48%) rotate(8deg) scale(1.08);
+            transform: translate(4%, 4%) scale(1.15);
         }
 
         75% {
-            transform: translate(-55%, -52%) rotate(-8deg) scale(1.05);
+            transform: translate(0%, 0%) scale(1);
         }
     }
 
-    @@keyframes happy-wink {
-
+    @@keyframes mouth-happy {
         0%,
-        85%,
         100% {
-            top: -500px;
-        }
-
-        90%,
-        95% {
-            top: 0px;
-        }
-    }
-
-    @@keyframes tremble {
-        0% {
-            transform: translate(0, 0) rotate(0deg);
-        }
-
-        10% {
-            transform: translate(-3px, -2px) rotate(-1deg);
-        }
-
-        20% {
-            transform: translate(3px, 2px) rotate(1deg);
-        }
-
-        30% {
-            transform: translate(-2px, 3px) rotate(-0.5deg);
-        }
-
-        40% {
-            transform: translate(2px, -3px) rotate(0.5deg);
+            transform: scale(1) translateY(0);
         }
 
         50% {
-            transform: translate(-3px, 1px) rotate(-1deg);
-        }
-
-        60% {
-            transform: translate(3px, -1px) rotate(1deg);
-        }
-
-        70% {
-            transform: translate(-1px, 2px) rotate(-0.5deg);
-        }
-
-        80% {
-            transform: translate(1px, -2px) rotate(0.5deg);
-        }
-
-        90% {
-            transform: translate(-2px, -1px) rotate(-1deg);
-        }
-
-        100% {
-            transform: translate(2px, 1px) rotate(1deg);
+            transform: scale(1.04, 1.08) translateY(-4px);
         }
     }
 
-    @@keyframes bulge {
-        0% {
-            transform: scale(1);
+    @@keyframes tongue-bounce {
+        0%,
+        100% {
+            transform: translateX(-50%) translateY(0);
         }
 
-        100% {
-            transform: scale(1.08);
+        50% {
+            transform: translateX(-50%) translateY(-6px);
         }
     }
 
@@ -475,224 +572,97 @@
         }
 
         100% {
-            transform: translate(-50%, -50%) scale(1.15);
+            transform: translate(-50%, -50%) scale(1.16);
         }
     }
 
     @@keyframes panic-dart {
         0% {
-            transform: translate(-50%, -50%);
-        }
-
-        10% {
-            transform: translate(-55%, -45%);
+            transform: translate(0, 0);
         }
 
         20% {
-            transform: translate(-45%, -55%);
-        }
-
-        30% {
-            transform: translate(-52%, -48%);
+            transform: translate(-10px, -8px);
         }
 
         40% {
-            transform: translate(-48%, -52%);
-        }
-
-        50% {
-            transform: translate(-54%, -46%);
+            transform: translate(9px, -6px);
         }
 
         60% {
-            transform: translate(-46%, -54%);
-        }
-
-        70% {
-            transform: translate(-51%, -49%);
+            transform: translate(-8px, 9px);
         }
 
         80% {
-            transform: translate(-49%, -51%);
-        }
-
-        90% {
-            transform: translate(-53%, -47%);
+            transform: translate(8px, 7px);
         }
 
         100% {
-            transform: translate(-47%, -53%);
+            transform: translate(-5px, -7px);
         }
     }
 
-    @@keyframes angry-pulse {
+    @@keyframes mouth-gasp {
+        0% {
+            transform: scale(1);
+        }
 
-        0%,
         100% {
-            transform: scaleX(1.1) scaleY(0.85);
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), inset 0 0 20px rgba(255, 0, 0, 0.2);
-        }
-
-        50% {
-            transform: scaleX(1.15) scaleY(0.8);
-            box-shadow: 0 0 50px rgba(255, 0, 0, 0.9), inset 0 0 30px rgba(255, 0, 0, 0.4);
-        }
-    }
-
-    @@keyframes angry-contract {
-
-        0%,
-        100% {
-            transform: translate(-50%, -50%) scaleY(1);
-        }
-
-        50% {
-            transform: translate(-50%, -50%) scaleY(1.2);
+            transform: scale(1.06);
         }
     }
 
     @@keyframes look-angry {
-
         0%,
         100% {
-            transform: translate(-50%, -42%);
+            transform: translate(0, -6px);
         }
 
         50% {
-            transform: translate(-50%, -38%);
+            transform: translate(0, -2px);
         }
     }
 
-    @@keyframes angry-intensify {
-
+    @@keyframes mouth-grr {
         0%,
         100% {
-            filter: brightness(1);
+            transform: translateX(0);
         }
 
-        50% {
-            filter: brightness(1.2);
-        }
-    }
-
-    @@keyframes angry-squint {
-
-        0%,
-        100% {
-            top: -250px;
+        25% {
+            transform: translateX(-2px);
         }
 
-        50% {
-            top: -200px;
+        75% {
+            transform: translateX(2px);
         }
     }
 
-    /* Friendly hover interaction */
-    .eye-wrapper:hover .eye {
-        transform: scale(1.08);
-        transition: transform 0.3s ease;
-    }
-
-    .eye-wrapper:hover .pupil {
-        width: 90px;
-        height: 90px;
-        transition: all 0.3s ease;
-    }
-
-    /* Add a subtle glow on hover */
-    .eye-wrapper:hover .eye {
-        box-shadow:
-            0 0 60px rgba(100, 200, 255, 0.6),
-            inset 0 -20px 40px rgba(0, 0, 0, 0.1);
-    }
-
-    .status-bar {
-        position: fixed;
-        bottom: 10px;
-        left: 20px;
-        right: 20px;
-        display: flex;
-        gap: 12px;
-        justify-content: flex-start;
-        align-items: center;
-        color: rgba(255,255,255,0.85);
-        font-family: ui-monospace, Menlo, Consolas, monospace;
-        font-size: 12px;
-        opacity: 0.7;
-        pointer-events: none;
-    }
 </style>
 
 @code {
-    /// <summary>
-    /// Represents different emotional states of the robot eyes.
-    /// </summary>
     private enum Mood
     {
-        /// <summary>
-        /// Neutral mood.
-        /// </summary>
         Neutral,
-
-        /// <summary>
-        /// Happy mood.
-        /// </summary>
         Happy,
-        /// <summary>
-        /// Terrified mood.
-        /// </summary>
         Terrified,
-        /// <summary>
-        /// Angry mood.
-        /// </summary>
         Angry
     }
 
-    /// <summary>
-    /// The current emotional state of the robot eyes.
-    /// </summary>
     private Mood _currentMood = Mood.Neutral;
 
-
-    /// <summary>
-    /// Display text showing the current distance measurement from the HC-SR04 sensor.
-    /// </summary>
     private string _distanceText = "-- cm";
-
-    /// <summary>
-    /// SignalR hub connection for receiving real-time distance updates from TobotHub.
-    /// </summary>
     private HubConnection? _hubConnection;
-
-    /// <summary>
-    /// The last measured distance value, used for detecting increases/decreases.
-    /// </summary>
     private double? _lastDistance;
-
-    /// <summary>
-    /// Cancellation token source for the 5-second neutral mood timer.
-    /// </summary>
     private CancellationTokenSource? _neutralCts;
-
-    /// <summary>
-    /// Task representing the running random drive operation.
-    /// </summary>
     private Task? _randomDriveTask;
-
-    /// <summary>
-    /// Indicates whether random drive is currently active.
-    /// </summary>
     private bool _isRandomDriveActive;
 
-    // Status bar fields
     private string _wifiSsidDisplay = "Wi‑Fi: --";
     private string _wifiIpDisplay = "IP: --";
     private string _cpuLoadDisplay = "--%";
     private string _memLoadDisplay = "--%";
 
-    /// <summary>
-    /// Returns the CSS class corresponding to the current mood.
-    /// </summary>
     private string GetMoodClass()
     {
         return _currentMood switch
@@ -704,31 +674,20 @@
         };
     }
 
-    /// <summary>
-    /// Initializes the component by setting up the SignalR connection and subscribing to distance change events.
-    /// Implements reactive mood logic: Angry when distance < 10cm, Happy when distance increases, Neutral after 5 seconds.
-    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        // Setup SignalR connection for distance updates
         _hubConnection = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
-        .WithAutomaticReconnect()
-        .Build();
+            .WithUrl(Navigation.ToAbsoluteUri("/tobothub"))
+            .WithAutomaticReconnect()
+            .Build();
 
         _hubConnection.On<double>(TobotHubEvents.DistanceChanged, cm =>
         {
             _distanceText = $"{cm:F1} cm";
 
-            // Reactive mood logic:
-            // - Start neutral
-            // - If distance < 10cm → Angry
-            // - If distance then increases → Happy
-            // - After 5 seconds → Neutral
             var previous = _lastDistance;
             _lastDistance = cm;
 
-            // Cancel any pending neutralization timer
             _neutralCts?.Cancel();
             _neutralCts?.Dispose();
             _neutralCts = null;
@@ -741,14 +700,9 @@
             {
                 _currentMood = Mood.Happy;
 
-                // Schedule neutral after 5 seconds
                 var cts = new CancellationTokenSource();
                 _neutralCts = cts;
                 _ = ResetToNeutralAfterDelayAsync(cts.Token);
-            }
-            else
-            {
-                // No specific rule matched; stay in current mood
             }
 
             InvokeAsync(StateHasChanged);
@@ -773,10 +727,6 @@
         }
     }
 
-    /// <summary>
-    /// Resets the mood to Neutral after a 5-second delay if not cancelled.
-    /// </summary>
-    /// <param name="cancellationToken">Token to cancel the delayed reset.</param>
     private async Task ResetToNeutralAfterDelayAsync(CancellationToken cancellationToken)
     {
         try
@@ -787,13 +737,9 @@
         }
         catch (TaskCanceledException)
         {
-            // Expected when mood changes before delay completes
         }
     }
 
-    /// <summary>
-    /// Handles click events on the page to toggle autonomous driving.
-    /// </summary>
     private void HandleFullscreenClick()
     {
         if (_isRandomDriveActive)
@@ -812,17 +758,14 @@
         _isRandomDriveActive = true;
     }
 
-    /// <summary>
-    /// Disposes of resources including the cancellation token source and SignalR hub connection.
-    /// </summary>
     public async ValueTask DisposeAsync()
     {
         _neutralCts?.Cancel();
         _neutralCts?.Dispose();
-        
+
         Controller.StopRandomDrive();
         _isRandomDriveActive = false;
-        
+
         if (_randomDriveTask is not null)
         {
             try
@@ -831,10 +774,9 @@
             }
             catch
             {
-                // Ignore cancellation exceptions
             }
         }
-        
+
         if (_hubConnection is not null)
         {
             try
@@ -843,9 +785,8 @@
             }
             catch
             {
-                // Ignore disposal errors
             }
-            
+
             await _hubConnection.DisposeAsync().ConfigureAwait(false);
         }
     }
