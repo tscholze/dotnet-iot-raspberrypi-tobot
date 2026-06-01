@@ -1,8 +1,10 @@
 using Microsoft.Maui.Platforms.Linux.Gtk4.Hosting;
 using Microsoft.Maui.Hosting;
+using System.Runtime.Versioning;
 
 namespace Tobot.Gtk;
 
+[SupportedOSPlatform("linux")]
 public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()

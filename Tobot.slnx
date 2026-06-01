@@ -2,5 +2,6 @@
   <Project Path="Tobot.Device/Tobot.Device.csproj" />
   <Project Path="Tobot.Pi/Tobot.Pi.csproj" />
   <Project Path="Tobot.Web/Tobot.Web.csproj" />
+   <Project Path="Tobot.Gtk/Tobot.Gtk.csproj" />
   <Project Path="Tobot/Tobot.csproj" />
 </Solution>
