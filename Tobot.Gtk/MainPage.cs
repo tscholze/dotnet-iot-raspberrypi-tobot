@@ -53,7 +53,7 @@ public class MainPage : ContentPage
         // Step 3: Create the top-left distance overlay.
         _distanceLabel = new Label
         {
-            Text = "-- cm",
+            Text = "--cm",
             FontSize = 22,
             TextColor = Color.FromArgb("#D7F7FF"),
             FontFamily = "DejaVu Sans",
@@ -63,6 +63,7 @@ public class MainPage : ContentPage
             VerticalOptions = LayoutOptions.Start,
             LineBreakMode = LineBreakMode.NoWrap,
             MaxLines = 1,
+            MinimumWidthRequest = 110,
             Margin = new Thickness(24, 24, 0, 0)
         };
 
@@ -76,20 +77,32 @@ public class MainPage : ContentPage
             HorizontalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.NoWrap,
             MaxLines = 1,
+            VerticalOptions = LayoutOptions.End,
             Margin = new Thickness(10, 0, 10, 14)
         };
 
         // Step 5: Layer the drawing surface and overlays in one grid.
-        var root = new Grid();
+        var root = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill,
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(GridLength.Auto)
+            }
+        };
         root.Children.Add(_graphicsView);
         root.Children.Add(_distanceLabel);
         root.Children.Add(_statusLabel);
+        Grid.SetRowSpan(_graphicsView, 2);
+        Grid.SetRow(_distanceLabel, 0);
+        Grid.SetRow(_statusLabel, 1);
 
         // Step 6: Ensure overlays stay above the rendered face.
         _graphicsView.ZIndex = 0;
         _distanceLabel.ZIndex = 1;
         _statusLabel.ZIndex = 1;
-        _statusLabel.VerticalOptions = LayoutOptions.End;
 
         // Step 7: Add tap support to manually cycle moods for testing.
         var tapGesture = new TapGestureRecognizer();
@@ -139,7 +152,7 @@ public class MainPage : ContentPage
         {
             // Step 2: Simulate distance and update the top-left label.
             var distance = _random.NextDouble() * 80 + 8;
-            _distanceLabel.Text = $"{distance:F1} cm";
+            _distanceLabel.Text = $"{distance:F1}cm";
 
             // Step 3: Simulate networking/system line and update bottom label.
             _statusLabel.Text = $"Wi-Fi: tobot-net  |  IP: 192.168.0.{_random.Next(20, 90)}  |  CPU {_random.Next(18, 63)}%  |  MEM {_random.Next(28, 74)}%";
