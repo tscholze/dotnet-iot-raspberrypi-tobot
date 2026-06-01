@@ -1,48 +1,29 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
 
 namespace Tobot.Gtk;
 
 public class MainPage : ContentPage
 {
-    private enum Mood
-    {
-        Neutral,
-        Happy,
-        Terrified,
-        Angry
-    }
-
     private readonly Label _distanceLabel;
     private readonly Label _statusLabel;
-
-    private readonly Border _leftEye;
-    private readonly Border _rightEye;
-    private readonly Border _leftPupil;
-    private readonly Border _rightPupil;
-    private readonly Border _leftEyelid;
-    private readonly Border _rightEyelid;
-
-    private readonly Border _nose;
-    private readonly Border _mouth;
-    private readonly Border _mouthInner;
-    private readonly Border _tongue;
-
-    private Mood _currentMood = Mood.Neutral;
-    private CancellationTokenSource _animationCts = new();
+    private readonly GraphicsView _graphicsView;
+    private readonly BotFaceDrawable _drawable;
     private readonly Random _random = new();
 
     public MainPage()
     {
-        Background = new LinearGradientBrush(
-            new GradientStopCollection
-            {
-                new(Color.FromArgb("#1D1536"), 0.0f),
-                new(Color.FromArgb("#100B23"), 1.0f)
-            },
-            new Point(0, 0),
-            new Point(0, 1));
+        BackgroundColor = Color.FromArgb("#130F1F");
+
+        _drawable = new BotFaceDrawable();
+        _graphicsView = new GraphicsView
+        {
+            Drawable = _drawable,
+            WidthRequest = 620,
+            HeightRequest = 860,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        };
 
         _distanceLabel = new Label
         {
@@ -56,71 +37,6 @@ public class MainPage : ContentPage
             VerticalOptions = LayoutOptions.Start,
             Margin = new Thickness(24, 24, 0, 0)
         };
-
-        var featureStage = new AbsoluteLayout
-        {
-            WidthRequest = 620,
-            HeightRequest = 860,
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.Center
-        };
-
-        _leftEye = CreateEye(out _leftPupil, out _leftEyelid);
-        _rightEye = CreateEye(out _rightPupil, out _rightEyelid);
-
-        AbsoluteLayout.SetLayoutBounds(_leftEye, new Rect(40, 170, 250, 250));
-        AbsoluteLayout.SetLayoutBounds(_rightEye, new Rect(330, 170, 250, 250));
-
-        _nose = new Border
-        {
-            WidthRequest = 26,
-            HeightRequest = 20,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
-            BackgroundColor = Color.FromArgb("#F28ABC")
-        };
-        AbsoluteLayout.SetLayoutBounds(_nose, new Rect(297, 490, 26, 20));
-
-        _mouthInner = new Border
-        {
-            Margin = new Thickness(14, 14, 14, 10),
-            StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(0, 0, 86, 86) },
-            BackgroundColor = Color.FromArgb("#6E3777")
-        };
-
-        _tongue = new Border
-        {
-            WidthRequest = 98,
-            HeightRequest = 56,
-            StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(56, 56, 18, 18) },
-            BackgroundColor = Color.FromArgb("#FF62A9"),
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.End,
-            Margin = new Thickness(0, 0, 0, -2)
-        };
-
-        var mouthInnerGrid = new Grid();
-        mouthInnerGrid.Children.Add(_mouthInner);
-        mouthInnerGrid.Children.Add(_tongue);
-
-        _mouth = new Border
-        {
-            WidthRequest = 220,
-            HeightRequest = 118,
-            StrokeThickness = 5,
-            Stroke = Color.FromArgb("#45234F"),
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(0, 0, 110, 110) },
-            BackgroundColor = Color.FromArgb("#2A1535"),
-            Content = mouthInnerGrid
-        };
-
-        AbsoluteLayout.SetLayoutBounds(_mouth, new Rect(200, 560, 220, 118));
-
-        featureStage.Children.Add(_leftEye);
-        featureStage.Children.Add(_rightEye);
-        featureStage.Children.Add(_nose);
-        featureStage.Children.Add(_mouth);
 
         _statusLabel = new Label
         {
@@ -141,7 +57,7 @@ public class MainPage : ContentPage
         };
 
         var contentLayer = new Grid();
-        contentLayer.Children.Add(featureStage);
+        contentLayer.Children.Add(_graphicsView);
         contentLayer.Children.Add(_distanceLabel);
 
         root.Children.Add(contentLayer);
@@ -149,100 +65,33 @@ public class MainPage : ContentPage
         Grid.SetRow(_statusLabel, 1);
 
         var tapGesture = new TapGestureRecognizer();
-        tapGesture.Tapped += (_, _) => CycleMood();
+        tapGesture.Tapped += (_, _) =>
+        {
+            _drawable.CycleMood();
+            _graphicsView.Invalidate();
+        };
         root.GestureRecognizers.Add(tapGesture);
 
         Content = root;
 
-        StartAnimations();
+        StartAnimationLoop();
         StartStatusSimulation();
     }
 
-    protected override void OnDisappearing()
+    private void StartAnimationLoop()
     {
-        base.OnDisappearing();
-        _animationCts.Cancel();
-    }
+        var lastTick = DateTime.UtcNow;
 
-    private Border CreateEye(out Border pupil, out Border eyelid)
-    {
-        pupil = new Border
+        Dispatcher.StartTimer(TimeSpan.FromMilliseconds(33), () =>
         {
-            WidthRequest = 78,
-            HeightRequest = 78,
-            StrokeThickness = 0,
-            StrokeShape = new Ellipse(),
-            Background = new RadialGradientBrush(
-                new GradientStopCollection
-                {
-                    new(Color.FromArgb("#3F2A65"), 0.0f),
-                    new(Color.FromArgb("#181129"), 1.0f)
-                },
-                new Point(0.35f, 0.3f),
-                1.0f)
-        };
+            var now = DateTime.UtcNow;
+            var delta = (now - lastTick).TotalSeconds;
+            lastTick = now;
 
-        var pupilHighlight = new Border
-        {
-            WidthRequest = 18,
-            HeightRequest = 18,
-            StrokeThickness = 0,
-            StrokeShape = new Ellipse(),
-            BackgroundColor = Colors.White,
-            Opacity = 0.9,
-            HorizontalOptions = LayoutOptions.Start,
-            VerticalOptions = LayoutOptions.Start,
-            Margin = new Thickness(20, 20, 0, 0)
-        };
-
-        var shine = new Border
-        {
-            WidthRequest = 30,
-            HeightRequest = 30,
-            StrokeThickness = 0,
-            StrokeShape = new Ellipse(),
-            BackgroundColor = Color.FromRgba(255, 255, 255, 0.9f),
-            Opacity = 0.7,
-            HorizontalOptions = LayoutOptions.Start,
-            VerticalOptions = LayoutOptions.Start,
-            Margin = new Thickness(72, 58, 0, 0)
-        };
-
-        var eyeball = new Grid();
-        eyeball.Children.Add(pupil);
-        eyeball.Children.Add(pupilHighlight);
-        eyeball.Children.Add(shine);
-
-        eyelid = new Border
-        {
-            WidthRequest = 250,
-            HeightRequest = 250,
-            StrokeThickness = 0,
-            StrokeShape = new Ellipse(),
-            Background = new LinearGradientBrush(
-                new GradientStopCollection
-                {
-                    new(Color.FromArgb("#FFD4EB"), 0),
-                    new(Color.FromArgb("#FFF2FA"), 1)
-                },
-                new Point(0, 0),
-                new Point(0, 1)),
-            TranslationY = -250
-        };
-
-        var eyeGrid = new Grid();
-        eyeGrid.Children.Add(eyeball);
-        eyeGrid.Children.Add(eyelid);
-
-        return new Border
-        {
-            WidthRequest = 250,
-            HeightRequest = 250,
-            StrokeThickness = 0,
-            StrokeShape = new Ellipse(),
-            BackgroundColor = Colors.White,
-            Content = eyeGrid
-        };
+            _drawable.Advance(delta);
+            _graphicsView.Invalidate();
+            return true;
+        });
     }
 
     private void StartStatusSimulation()
@@ -251,161 +100,234 @@ public class MainPage : ContentPage
         {
             var distance = _random.NextDouble() * 80 + 8;
             _distanceLabel.Text = $"{distance:F1} cm";
-
             _statusLabel.Text = $"Wi-Fi: tobot-net  |  IP: 192.168.0.{_random.Next(20, 90)}  |  CPU {_random.Next(18, 63)}%  |  MEM {_random.Next(28, 74)}%";
 
-            if (distance < 12)
-            {
-                _currentMood = Mood.Angry;
-            }
-            else if (distance > 50)
-            {
-                _currentMood = Mood.Happy;
-            }
-            else
-            {
-                _currentMood = Mood.Neutral;
-            }
-
-            ApplyMoodStyle();
+            _drawable.SetMoodFromDistance(distance);
+            _graphicsView.Invalidate();
             return true;
         });
     }
+}
 
-    private void StartAnimations()
+internal sealed class BotFaceDrawable : IDrawable
+{
+    private enum Mood
     {
-        _ = AnimateEyeBobAsync(_leftEye, TimeSpan.Zero, _animationCts.Token);
-        _ = AnimateEyeBobAsync(_rightEye, TimeSpan.FromMilliseconds(120), _animationCts.Token);
-        _ = AnimateLookAsync(_leftPupil, _rightPupil, _animationCts.Token);
-        _ = AnimateBlinkAsync(_leftEyelid, TimeSpan.Zero, _animationCts.Token);
-        _ = AnimateBlinkAsync(_rightEyelid, TimeSpan.FromMilliseconds(80), _animationCts.Token);
-        _ = AnimateMouthAsync(_animationCts.Token);
+        Neutral,
+        Happy,
+        Terrified,
+        Angry
     }
 
-    private async Task AnimateEyeBobAsync(View eye, TimeSpan delay, CancellationToken token)
-    {
-        if (delay > TimeSpan.Zero)
-        {
-            await Task.Delay(delay, token);
-        }
+    private Mood _mood = Mood.Neutral;
+    private double _elapsed;
+    private double _blink;
+    private double _nextBlink = 2.8;
+    private double _leftBob;
+    private double _rightBob;
+    private float _pupilOffsetX;
+    private float _pupilOffsetY;
+    private float _mouthScale = 1f;
 
-        while (!token.IsCancellationRequested)
-        {
-            await eye.TranslateToAsync(eye.TranslationX, -8, 1600, Easing.SinInOut);
-            await eye.TranslateToAsync(eye.TranslationX, 0, 1600, Easing.SinInOut);
-        }
+    public void Draw(ICanvas canvas, RectF dirtyRect)
+    {
+        canvas.SaveState();
+        canvas.Antialias = true;
+
+        DrawEye(canvas, 40, 170 + (float)_leftBob, true);
+        DrawEye(canvas, 330, 170 + (float)_rightBob, false);
+        DrawNose(canvas);
+        DrawMouth(canvas);
+
+        canvas.RestoreState();
     }
 
-    private async Task AnimateLookAsync(View leftPupil, View rightPupil, CancellationToken token)
+    public void Advance(double deltaSeconds)
     {
-        var positions = new[]
+        _elapsed += deltaSeconds;
+
+        _leftBob = Math.Sin(_elapsed * 2.2) * 8;
+        _rightBob = Math.Sin((_elapsed + 0.12) * 2.2) * 8;
+
+        _pupilOffsetX = (float)(Math.Sin(_elapsed * 1.3) * 5);
+        _pupilOffsetY = (float)(Math.Cos(_elapsed * 1.7) * 4);
+
+        _mouthScale = _mood switch
         {
-            new Point(0, 0),
-            new Point(-5, -6),
-            new Point(5, -4),
-            new Point(-4, 5),
-            new Point(4, 4),
-            new Point(0, 0)
+            Mood.Happy => 1.08f + (float)(Math.Sin(_elapsed * 6.0) * 0.05),
+            Mood.Terrified => 1.02f + (float)(Math.Sin(_elapsed * 9.0) * 0.04),
+            Mood.Angry => 1.0f + (float)(Math.Sin(_elapsed * 15.0) * 0.02),
+            _ => 0.96f + (float)(Math.Sin(_elapsed * 3.4) * 0.04)
         };
 
-        while (!token.IsCancellationRequested)
+        _nextBlink -= deltaSeconds;
+        if (_nextBlink <= 0)
         {
-            foreach (var pos in positions)
+            _blink += deltaSeconds * 10;
+            if (_blink >= 2)
             {
-                await leftPupil.TranslateToAsync(pos.X, pos.Y, 550, Easing.SinInOut);
-                await rightPupil.TranslateToAsync(pos.X, pos.Y, 550, Easing.SinInOut);
-                if (token.IsCancellationRequested)
-                {
-                    return;
-                }
+                _blink = 0;
+                _nextBlink = 2.4 + Random.Shared.NextDouble() * 1.8;
             }
         }
     }
 
-    private async Task AnimateBlinkAsync(View eyelid, TimeSpan delay, CancellationToken token)
+    public void CycleMood()
     {
-        if (delay > TimeSpan.Zero)
-        {
-            await Task.Delay(delay, token);
-        }
-
-        while (!token.IsCancellationRequested)
-        {
-            await Task.Delay(3400, token);
-            await eyelid.TranslateToAsync(0, 250, 90, Easing.CubicIn);
-            await eyelid.TranslateToAsync(0, 0, 110, Easing.CubicOut);
-        }
-    }
-
-    private async Task AnimateMouthAsync(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
-        {
-            await _mouth.ScaleToAsync(1.0, 900, Easing.SinInOut);
-            await _mouth.ScaleToAsync(0.96, 900, Easing.SinInOut);
-            await _mouth.ScaleToAsync(1.0, 900, Easing.SinInOut);
-        }
-    }
-
-    private void CycleMood()
-    {
-        _currentMood = _currentMood switch
+        _mood = _mood switch
         {
             Mood.Neutral => Mood.Happy,
             Mood.Happy => Mood.Terrified,
             Mood.Terrified => Mood.Angry,
             _ => Mood.Neutral
         };
-
-        ApplyMoodStyle();
     }
 
-    private void ApplyMoodStyle()
+    public void SetMoodFromDistance(double distance)
     {
-        switch (_currentMood)
+        _mood = distance switch
         {
-            case Mood.Happy:
-                _leftPupil.WidthRequest = 52;
-                _leftPupil.HeightRequest = 52;
-                _rightPupil.WidthRequest = 52;
-                _rightPupil.HeightRequest = 52;
-                _mouth.WidthRequest = 280;
-                _mouth.HeightRequest = 150;
-                _nose.Scale = 1.08;
-                break;
+            < 12 => Mood.Angry,
+            > 50 => Mood.Happy,
+            _ => Mood.Neutral
+        };
+    }
 
-            case Mood.Terrified:
-                _leftPupil.WidthRequest = 102;
-                _leftPupil.HeightRequest = 102;
-                _rightPupil.WidthRequest = 102;
-                _rightPupil.HeightRequest = 102;
-                _mouth.WidthRequest = 150;
-                _mouth.HeightRequest = 160;
-                _nose.Opacity = 0.0;
-                break;
+    private void DrawEye(ICanvas canvas, float x, float y, bool left)
+    {
+        var eyeWidth = _mood == Mood.Terrified ? 270f : 250f;
+        var eyeHeight = _mood switch
+        {
+            Mood.Happy => 205f,
+            Mood.Angry => 220f,
+            Mood.Terrified => 270f,
+            _ => 250f
+        };
 
-            case Mood.Angry:
-                _leftPupil.WidthRequest = 38;
-                _leftPupil.HeightRequest = 58;
-                _rightPupil.WidthRequest = 38;
-                _rightPupil.HeightRequest = 58;
-                _mouth.WidthRequest = 250;
-                _mouth.HeightRequest = 86;
-                _nose.Opacity = 1.0;
-                _nose.BackgroundColor = Color.FromArgb("#D35A8D");
-                break;
+        canvas.FillColor = Colors.White;
+        canvas.FillEllipse(x, y, eyeWidth, eyeHeight);
 
-            default:
-                _leftPupil.WidthRequest = 78;
-                _leftPupil.HeightRequest = 78;
-                _rightPupil.WidthRequest = 78;
-                _rightPupil.HeightRequest = 78;
-                _mouth.WidthRequest = 220;
-                _mouth.HeightRequest = 118;
-                _nose.Opacity = 0.9;
-                _nose.Scale = 1.0;
-                _nose.BackgroundColor = Color.FromArgb("#F28ABC");
-                break;
+        var pupilWidth = _mood switch
+        {
+            Mood.Happy => 52f,
+            Mood.Terrified => 102f,
+            Mood.Angry => 38f,
+            _ => 78f
+        };
+
+        var pupilHeight = _mood switch
+        {
+            Mood.Angry => 58f,
+            _ => pupilWidth
+        };
+
+        var pupilX = x + (eyeWidth - pupilWidth) / 2f + _pupilOffsetX;
+        var pupilY = y + (eyeHeight - pupilHeight) / 2f + _pupilOffsetY;
+
+        canvas.FillColor = _mood == Mood.Angry ? Color.FromArgb("#780F0F") : Color.FromArgb("#241636");
+        canvas.FillEllipse(pupilX, pupilY, pupilWidth, pupilHeight);
+
+        canvas.FillColor = Colors.White;
+        canvas.FillEllipse(pupilX + 18, pupilY + 18, 18, 18);
+        canvas.FillEllipse(pupilX + 52, pupilY + 26, 12, 12);
+
+        var blinkValue = GetBlinkValue();
+        if (_mood != Mood.Terrified && blinkValue > 0.01f)
+        {
+            canvas.FillColor = Color.FromArgb("#FFD4EB");
+            canvas.FillRoundedRectangle(x, y, eyeWidth, eyeHeight * blinkValue, 90);
         }
+
+        if (_mood == Mood.Angry)
+        {
+            canvas.StrokeColor = Color.FromArgb("#7B4B99");
+            canvas.StrokeSize = 8;
+            if (left)
+            {
+                canvas.DrawLine(x + 18, y + 26, x + eyeWidth - 18, y + 6);
+            }
+            else
+            {
+                canvas.DrawLine(x + 18, y + 6, x + eyeWidth - 18, y + 26);
+            }
+        }
+    }
+
+    private void DrawNose(ICanvas canvas)
+    {
+        if (_mood == Mood.Terrified)
+        {
+            return;
+        }
+
+        canvas.FillColor = _mood == Mood.Angry ? Color.FromArgb("#D35A8D") : Color.FromArgb("#F28ABC");
+        canvas.FillEllipse(297, 490, 26, 20);
+        canvas.FillColor = Color.FromRgba(255, 255, 255, 0.7f);
+        canvas.FillEllipse(305, 494, 8, 5);
+    }
+
+    private void DrawMouth(ICanvas canvas)
+    {
+        var width = _mood switch
+        {
+            Mood.Happy => 280f,
+            Mood.Terrified => 150f,
+            Mood.Angry => 250f,
+            _ => 220f
+        };
+
+        var height = _mood switch
+        {
+            Mood.Happy => 150f,
+            Mood.Terrified => 160f,
+            Mood.Angry => 86f,
+            _ => 118f
+        };
+
+        var scaledWidth = width * _mouthScale;
+        var scaledHeight = height * _mouthScale;
+        var x = 310f - scaledWidth / 2f;
+        var y = 560f - (scaledHeight - height) / 2f;
+
+        canvas.FillColor = Color.FromArgb("#2A1535");
+        canvas.FillRoundedRectangle(x, y, scaledWidth, scaledHeight, _mood == Mood.Terrified ? 70 : 36);
+
+        if (_mood != Mood.Angry)
+        {
+            canvas.FillColor = Color.FromArgb("#6E3777");
+            canvas.FillRoundedRectangle(x + 14, y + 14, scaledWidth - 28, scaledHeight - 24, _mood == Mood.Terrified ? 56 : 32);
+
+            if (_mood != Mood.Terrified)
+            {
+                var tongueWidth = MathF.Min(98, scaledWidth - 60);
+                var tongueHeight = MathF.Min(56, scaledHeight * 0.45f);
+                canvas.FillColor = Color.FromArgb("#FF62A9");
+                canvas.FillRoundedRectangle(x + (scaledWidth - tongueWidth) / 2f, y + scaledHeight - tongueHeight - 2, tongueWidth, tongueHeight, 24);
+            }
+        }
+        else
+        {
+            canvas.StrokeColor = Color.FromArgb("#9E3F58");
+            canvas.StrokeSize = 4;
+            for (var offset = 16f; offset < scaledWidth - 12f; offset += 16f)
+            {
+                canvas.DrawLine(x + offset, y + 12, x + offset - 10, y + scaledHeight - 10);
+            }
+        }
+    }
+
+    private float GetBlinkValue()
+    {
+        if (_blink <= 0)
+        {
+            return 0f;
+        }
+
+        if (_blink < 1)
+        {
+            return (float)_blink;
+        }
+
+        return Math.Max(0f, (float)(2 - _blink));
     }
 }

@@ -1,8 +1,19 @@
 using Microsoft.Maui.Platforms.Linux.Gtk4.Platform;
 using Microsoft.Maui.Hosting;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace Tobot.Gtk;
+
+internal static class GtkStartupEnvironment
+{
+    [ModuleInitializer]
+    internal static void Configure()
+    {
+        Environment.SetEnvironmentVariable("GTK_A11Y", "none");
+        Environment.SetEnvironmentVariable("NO_AT_BRIDGE", "1");
+    }
+}
 
 [SupportedOSPlatform("linux")]
 public class Program : GtkMauiApplication
@@ -11,9 +22,6 @@ public class Program : GtkMauiApplication
 
     public static void Main(string[] args)
     {
-        Environment.SetEnvironmentVariable("GTK_A11Y", "none");
-        Environment.SetEnvironmentVariable("NO_AT_BRIDGE", "1");
-
         var app = new Program();
         app.Run(args);
     }
