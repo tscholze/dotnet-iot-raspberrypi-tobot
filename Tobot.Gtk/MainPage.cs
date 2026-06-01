@@ -139,7 +139,7 @@ internal sealed class BotFaceDrawable : IDrawable
         };
 
         var eyeGap = faceWidth * (_mood == Mood.Terrified ? 0.055f : 0.085f);
-        var centerX = dirtyRect.Center.X;
+        var centerX = dirtyRect.Center.X - (dirtyRect.Width * 0.10f);
         var eyeTop = dirtyRect.Height * 0.24f;
         var leftEyeX = centerX - eyeGap / 2f - eyeWidth;
         var rightEyeX = centerX + eyeGap / 2f;
