@@ -11,6 +11,9 @@ public class Program : GtkMauiApplication
 
     public static void Main(string[] args)
     {
+        Environment.SetEnvironmentVariable("GTK_A11Y", "none");
+        Environment.SetEnvironmentVariable("NO_AT_BRIDGE", "1");
+
         var app = new Program();
         app.Run(args);
     }
