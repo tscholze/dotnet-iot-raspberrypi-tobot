@@ -47,22 +47,16 @@ public class MainPage : ContentPage
             Margin = new Thickness(10, 0, 10, 14)
         };
 
-        var root = new Grid
-        {
-            RowDefinitions =
-            {
-                new RowDefinition { Height = GridLength.Star },
-                new RowDefinition { Height = GridLength.Auto }
-            }
-        };
+        var root = new Grid();
 
-        var contentLayer = new Grid();
-        contentLayer.Children.Add(_graphicsView);
-        contentLayer.Children.Add(_distanceLabel);
-
-        root.Children.Add(contentLayer);
+        root.Children.Add(_graphicsView);
+        root.Children.Add(_distanceLabel);
         root.Children.Add(_statusLabel);
-        Grid.SetRow(_statusLabel, 1);
+
+        _graphicsView.ZIndex = 0;
+        _distanceLabel.ZIndex = 1;
+        _statusLabel.ZIndex = 1;
+        _statusLabel.VerticalOptions = LayoutOptions.End;
 
         var tapGesture = new TapGestureRecognizer();
         tapGesture.Tapped += (_, _) =>
