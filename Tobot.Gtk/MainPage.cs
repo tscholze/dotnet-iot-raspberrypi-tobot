@@ -135,11 +135,18 @@ internal sealed class BotFaceDrawable : IDrawable
         var offsetX = dirtyRect.Center.X - (renderWidth / 2f);
         var offsetY = dirtyRect.Center.Y - (renderHeight / 2f);
 
-        canvas.Translate(offsetX, offsetY);
-        canvas.Scale(scale, scale);
+        var eyeWidth = _mood == Mood.Terrified ? 285f : 265f;
+        var eyeInnerGap = _mood == Mood.Terrified ? 46f : 54f;
+        var centerX = DesignWidth / 2f;
+        var eyeY = 290f;
+        var leftEyeX = centerX - (eyeInnerGap / 2f) - eyeWidth;
+        var rightEyeX = centerX + (eyeInnerGap / 2f);
 
-        DrawEye(canvas, 95, 300 + (float)_leftBob, true);
-        DrawEye(canvas, 375, 300 + (float)_rightBob, false);
+        canvas.Scale(scale, scale);
+        canvas.Translate(offsetX / scale, offsetY / scale);
+
+        DrawEye(canvas, leftEyeX, eyeY + (float)_leftBob, true);
+        DrawEye(canvas, rightEyeX, eyeY + (float)_rightBob, false);
         DrawNose(canvas);
         DrawMouth(canvas);
 
@@ -265,9 +272,9 @@ internal sealed class BotFaceDrawable : IDrawable
         }
 
         canvas.FillColor = _mood == Mood.Angry ? Color.FromArgb("#D35A8D") : Color.FromArgb("#F28ABC");
-        canvas.FillEllipse(347, 650, 26, 20);
+        canvas.FillEllipse(347, 680, 26, 20);
         canvas.FillColor = Color.FromRgba(255, 255, 255, 0.7f);
-        canvas.FillEllipse(355, 654, 8, 5);
+        canvas.FillEllipse(355, 684, 8, 5);
     }
 
     private void DrawMouth(ICanvas canvas)
@@ -291,7 +298,7 @@ internal sealed class BotFaceDrawable : IDrawable
         var scaledWidth = width * _mouthScale;
         var scaledHeight = height * _mouthScale;
         var x = 360f - scaledWidth / 2f;
-        var y = 770f - (scaledHeight - height) / 2f;
+        var y = 840f - (scaledHeight - height) / 2f;
 
         canvas.FillColor = Color.FromArgb("#2A1535");
         canvas.FillRoundedRectangle(x, y, scaledWidth, scaledHeight, _mood == Mood.Terrified ? 70 : 36);
