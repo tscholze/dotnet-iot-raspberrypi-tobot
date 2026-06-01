@@ -103,9 +103,6 @@ public class MainPage : ContentPage
 
 internal sealed class BotFaceDrawable : IDrawable
 {
-    private const float DesignWidth = 720f;
-    private const float DesignHeight = 1280f;
-
     private enum Mood
     {
         Neutral,
@@ -129,26 +126,28 @@ internal sealed class BotFaceDrawable : IDrawable
         canvas.SaveState();
         canvas.Antialias = true;
 
-        var scale = MathF.Min(dirtyRect.Width / DesignWidth, dirtyRect.Height / DesignHeight);
-        var renderWidth = DesignWidth * scale;
-        var renderHeight = DesignHeight * scale;
-        var offsetX = dirtyRect.Center.X - (renderWidth / 2f);
-        var offsetY = dirtyRect.Center.Y - (renderHeight / 2f);
+        var usableWidth = dirtyRect.Width * 0.88f;
+        var usableHeight = dirtyRect.Height * 0.84f;
+        var faceWidth = MathF.Min(usableWidth, usableHeight * 0.76f);
+        var eyeWidth = _mood == Mood.Terrified ? faceWidth * 0.43f : faceWidth * 0.40f;
+        var eyeHeight = _mood switch
+        {
+            Mood.Happy => eyeWidth * 0.82f,
+            Mood.Angry => eyeWidth * 0.88f,
+            Mood.Terrified => eyeWidth,
+            _ => eyeWidth * 0.94f
+        };
 
-        var eyeWidth = _mood == Mood.Terrified ? 285f : 265f;
-        var eyeInnerGap = _mood == Mood.Terrified ? 46f : 54f;
-        var centerX = DesignWidth / 2f;
-        var eyeY = 290f;
-        var leftEyeX = centerX - (eyeInnerGap / 2f) - eyeWidth;
-        var rightEyeX = centerX + (eyeInnerGap / 2f);
+        var eyeGap = faceWidth * (_mood == Mood.Terrified ? 0.055f : 0.085f);
+        var centerX = dirtyRect.Center.X;
+        var eyeTop = dirtyRect.Height * 0.24f;
+        var leftEyeX = centerX - eyeGap / 2f - eyeWidth;
+        var rightEyeX = centerX + eyeGap / 2f;
 
-        canvas.Scale(scale, scale);
-        canvas.Translate(offsetX / scale, offsetY / scale);
-
-        DrawEye(canvas, leftEyeX, eyeY + (float)_leftBob, true);
-        DrawEye(canvas, rightEyeX, eyeY + (float)_rightBob, false);
-        DrawNose(canvas);
-        DrawMouth(canvas);
+        DrawEye(canvas, leftEyeX, eyeTop + (float)_leftBob, eyeWidth, eyeHeight, true);
+        DrawEye(canvas, rightEyeX, eyeTop + (float)_rightBob, eyeWidth, eyeHeight, false);
+        DrawNose(canvas, centerX, dirtyRect.Height * 0.53f);
+        DrawMouth(canvas, centerX, dirtyRect.Height * 0.67f, faceWidth);
 
         canvas.RestoreState();
     }
@@ -204,31 +203,22 @@ internal sealed class BotFaceDrawable : IDrawable
         };
     }
 
-    private void DrawEye(ICanvas canvas, float x, float y, bool left)
+    private void DrawEye(ICanvas canvas, float x, float y, float eyeWidth, float eyeHeight, bool left)
     {
-        var eyeWidth = _mood == Mood.Terrified ? 270f : 250f;
-        var eyeHeight = _mood switch
-        {
-            Mood.Happy => 205f,
-            Mood.Angry => 220f,
-            Mood.Terrified => 270f,
-            _ => 250f
-        };
-
         canvas.FillColor = Colors.White;
         canvas.FillEllipse(x, y, eyeWidth, eyeHeight);
 
         var pupilWidth = _mood switch
         {
-            Mood.Happy => 52f,
-            Mood.Terrified => 102f,
-            Mood.Angry => 38f,
-            _ => 78f
+            Mood.Happy => eyeWidth * 0.20f,
+            Mood.Terrified => eyeWidth * 0.38f,
+            Mood.Angry => eyeWidth * 0.15f,
+            _ => eyeWidth * 0.29f
         };
 
         var pupilHeight = _mood switch
         {
-            Mood.Angry => 58f,
+            Mood.Angry => eyeHeight * 0.26f,
             _ => pupilWidth
         };
 
@@ -239,14 +229,14 @@ internal sealed class BotFaceDrawable : IDrawable
         canvas.FillEllipse(pupilX, pupilY, pupilWidth, pupilHeight);
 
         canvas.FillColor = Colors.White;
-        canvas.FillEllipse(pupilX + 18, pupilY + 18, 18, 18);
-        canvas.FillEllipse(pupilX + 52, pupilY + 26, 12, 12);
+        canvas.FillEllipse(pupilX + pupilWidth * 0.22f, pupilY + pupilHeight * 0.22f, pupilWidth * 0.24f, pupilWidth * 0.24f);
+        canvas.FillEllipse(pupilX + pupilWidth * 0.64f, pupilY + pupilHeight * 0.30f, pupilWidth * 0.14f, pupilWidth * 0.14f);
 
         var blinkValue = GetBlinkValue();
         if (_mood != Mood.Terrified && blinkValue > 0.01f)
         {
             canvas.FillColor = Color.FromArgb("#FFD4EB");
-            canvas.FillRoundedRectangle(x, y, eyeWidth, eyeHeight * blinkValue, 90);
+            canvas.FillRoundedRectangle(x, y, eyeWidth, eyeHeight * blinkValue, eyeWidth * 0.36f);
         }
 
         if (_mood == Mood.Angry)
@@ -255,50 +245,54 @@ internal sealed class BotFaceDrawable : IDrawable
             canvas.StrokeSize = 8;
             if (left)
             {
-                canvas.DrawLine(x + 18, y + 26, x + eyeWidth - 18, y + 6);
+                canvas.DrawLine(x + eyeWidth * 0.08f, y + eyeHeight * 0.14f, x + eyeWidth * 0.92f, y + eyeHeight * 0.03f);
             }
             else
             {
-                canvas.DrawLine(x + 18, y + 6, x + eyeWidth - 18, y + 26);
+                canvas.DrawLine(x + eyeWidth * 0.08f, y + eyeHeight * 0.03f, x + eyeWidth * 0.92f, y + eyeHeight * 0.14f);
             }
         }
     }
 
-    private void DrawNose(ICanvas canvas)
+    private void DrawNose(ICanvas canvas, float centerX, float top)
     {
         if (_mood == Mood.Terrified)
         {
             return;
         }
 
+        var noseWidth = 26f;
+        var noseHeight = 20f;
+        var x = centerX - (noseWidth / 2f);
+
         canvas.FillColor = _mood == Mood.Angry ? Color.FromArgb("#D35A8D") : Color.FromArgb("#F28ABC");
-        canvas.FillEllipse(347, 680, 26, 20);
+        canvas.FillEllipse(x, top, noseWidth, noseHeight);
         canvas.FillColor = Color.FromRgba(255, 255, 255, 0.7f);
-        canvas.FillEllipse(355, 684, 8, 5);
+        canvas.FillEllipse(x + 8, top + 4, 8, 5);
     }
 
-    private void DrawMouth(ICanvas canvas)
+    private void DrawMouth(ICanvas canvas, float centerX, float centerY, float faceWidth)
     {
         var width = _mood switch
         {
-            Mood.Happy => 280f,
-            Mood.Terrified => 150f,
-            Mood.Angry => 250f,
-            _ => 220f
+            Mood.Happy => faceWidth * 0.44f,
+            Mood.Terrified => faceWidth * 0.24f,
+            Mood.Angry => faceWidth * 0.39f,
+            _ => faceWidth * 0.34f
         };
 
         var height = _mood switch
         {
-            Mood.Happy => 150f,
-            Mood.Terrified => 160f,
-            Mood.Angry => 86f,
-            _ => 118f
+            Mood.Happy => faceWidth * 0.24f,
+            Mood.Terrified => faceWidth * 0.25f,
+            Mood.Angry => faceWidth * 0.135f,
+            _ => faceWidth * 0.18f
         };
 
         var scaledWidth = width * _mouthScale;
         var scaledHeight = height * _mouthScale;
-        var x = 360f - scaledWidth / 2f;
-        var y = 840f - (scaledHeight - height) / 2f;
+        var x = centerX - scaledWidth / 2f;
+        var y = centerY - scaledHeight / 2f;
 
         canvas.FillColor = Color.FromArgb("#2A1535");
         canvas.FillRoundedRectangle(x, y, scaledWidth, scaledHeight, _mood == Mood.Terrified ? 70 : 36);
