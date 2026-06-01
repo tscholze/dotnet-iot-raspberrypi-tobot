@@ -19,10 +19,8 @@ public class MainPage : ContentPage
         _graphicsView = new GraphicsView
         {
             Drawable = _drawable,
-            WidthRequest = 620,
-            HeightRequest = 860,
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.Center
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill
         };
 
         _distanceLabel = new Label
@@ -105,6 +103,9 @@ public class MainPage : ContentPage
 
 internal sealed class BotFaceDrawable : IDrawable
 {
+    private const float DesignWidth = 720f;
+    private const float DesignHeight = 1280f;
+
     private enum Mood
     {
         Neutral,
@@ -128,8 +129,17 @@ internal sealed class BotFaceDrawable : IDrawable
         canvas.SaveState();
         canvas.Antialias = true;
 
-        DrawEye(canvas, 40, 170 + (float)_leftBob, true);
-        DrawEye(canvas, 330, 170 + (float)_rightBob, false);
+        var scale = MathF.Min(dirtyRect.Width / DesignWidth, dirtyRect.Height / DesignHeight);
+        var renderWidth = DesignWidth * scale;
+        var renderHeight = DesignHeight * scale;
+        var offsetX = dirtyRect.Center.X - (renderWidth / 2f);
+        var offsetY = dirtyRect.Center.Y - (renderHeight / 2f);
+
+        canvas.Translate(offsetX, offsetY);
+        canvas.Scale(scale, scale);
+
+        DrawEye(canvas, 95, 300 + (float)_leftBob, true);
+        DrawEye(canvas, 375, 300 + (float)_rightBob, false);
         DrawNose(canvas);
         DrawMouth(canvas);
 
@@ -255,9 +265,9 @@ internal sealed class BotFaceDrawable : IDrawable
         }
 
         canvas.FillColor = _mood == Mood.Angry ? Color.FromArgb("#D35A8D") : Color.FromArgb("#F28ABC");
-        canvas.FillEllipse(297, 490, 26, 20);
+        canvas.FillEllipse(347, 650, 26, 20);
         canvas.FillColor = Color.FromRgba(255, 255, 255, 0.7f);
-        canvas.FillEllipse(305, 494, 8, 5);
+        canvas.FillEllipse(355, 654, 8, 5);
     }
 
     private void DrawMouth(ICanvas canvas)
@@ -280,8 +290,8 @@ internal sealed class BotFaceDrawable : IDrawable
 
         var scaledWidth = width * _mouthScale;
         var scaledHeight = height * _mouthScale;
-        var x = 310f - scaledWidth / 2f;
-        var y = 560f - (scaledHeight - height) / 2f;
+        var x = 360f - scaledWidth / 2f;
+        var y = 770f - (scaledHeight - height) / 2f;
 
         canvas.FillColor = Color.FromArgb("#2A1535");
         canvas.FillRoundedRectangle(x, y, scaledWidth, scaledHeight, _mood == Mood.Terrified ? 70 : 36);
