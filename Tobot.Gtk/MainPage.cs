@@ -61,6 +61,8 @@ public class MainPage : ContentPage
             BackgroundColor = Color.FromRgba(10, 8, 22, 0.65),
             HorizontalOptions = LayoutOptions.Start,
             VerticalOptions = LayoutOptions.Start,
+            LineBreakMode = LineBreakMode.NoWrap,
+            MaxLines = 1,
             Margin = new Thickness(24, 24, 0, 0)
         };
 
@@ -70,7 +72,10 @@ public class MainPage : ContentPage
             Text = "Wi-Fi: --  |  IP: --  |  CPU --%  |  MEM --%",
             FontSize = 16,
             TextColor = Color.FromRgba(235, 246, 255, 0.9f),
-            HorizontalOptions = LayoutOptions.Center,
+            HorizontalOptions = LayoutOptions.Fill,
+            HorizontalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.NoWrap,
+            MaxLines = 1,
             Margin = new Thickness(10, 0, 10, 14)
         };
 
