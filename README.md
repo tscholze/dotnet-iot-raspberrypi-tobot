@@ -8,6 +8,7 @@
 [![C# 13](https://img.shields.io/badge/C%23-13.0-239120?logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Compatible-C51A4A?logo=raspberry-pi)](https://www.raspberrypi.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/actions/workflows/ci.yml/badge.svg)](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/actions/workflows/ci.yml)
 
 ---
 
@@ -881,6 +882,25 @@ For more, please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
+## ✅ CI / Pre-Merge Checks
+
+Every pull request and push to `main` runs through an automated pipeline on a free GitHub-hosted `ubuntu-latest` runner.
+
+| Step | What it catches |
+|---|---|
+| **Restore** | Missing or broken NuGet packages |
+| **Build (Release)** | Compile errors across all projects |
+
+The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+### Known limitations
+
+- **Hardware tests are not possible in CI** — GPIO and Raspberry Pi hardware require a physical device.
+- **Format verification is not yet enabled** — a `.editorconfig` needs to be added first.
+- **`TreatWarningsAsErrors` is not yet enabled** — GPIO calls need `[SupportedOSPlatform("linux")]` annotations before this can be safely enforced.
+
+---
+
 ## 🗺️ Roadmap
 
 ### Current Features
@@ -896,7 +916,7 @@ For more, please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - [ ] Configuration system
 - [ ] Logging framework
 - [ ] Unit test coverage
-- [ ] CI/CD pipeline
+- [X] CI/CD pipeline
 
 ---
 
