@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Restore & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # .NET 10 is still in preview — include-prerelease ensures the SDK is found.
+      # Remove include-prerelease once .NET 10 reaches GA.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+          include-prerelease: true
+
+      - name: Restore
+        run: dotnet restore Tobot.slnx
+
+      - name: Build
+        run: dotnet build Tobot.slnx --no-restore --configuration Release
