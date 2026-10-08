@@ -35,10 +35,22 @@ The software stack centers around the `TobotController`, a unified C# API that o
 ## How it looks
 
 ### Tobot
+#### v3
+<div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <img src="_docs/tobot-2-1.jpeg" alt="Tobot robot build" height="260" />
+</div>
+
+#### v2
 <div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
     <img src="_docs/bot-1.jpeg" alt="Tobot robot build" height="260" />
     <img src="_docs/bot-2.jpeg" alt="Frame front" height="260" />
     <img src="_docs/bot-3.jpeg" alt="Frame back" height="260" />
+</div>
+
+#### v1
+<div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <img src="_docs/bot-1-2.jpeg" alt="Tobot robot build" height="260" />
+    <img src="_docs/bot-1-3.jpeg" alt="Frame front" height="260" />
 </div>
 
 ### Tobot.Web
