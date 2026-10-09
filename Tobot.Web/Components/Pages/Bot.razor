@@ -6,11 +6,10 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Tobot.Web.Hubs
 @inject NavigationManager Navigation
-@inject Tobot.Device.TobotController Controller
 
 <PageTitle>Tobot Bot</PageTitle>
 
-<div class="bot-screen @GetMoodClass()" @onclick="HandleFullscreenClick">
+<div class="bot-screen @GetMoodClass()">
     <div class="distance-indicator">@_distanceText</div>
 
     <div class="feature-stage">
@@ -655,8 +654,6 @@
     private HubConnection? _hubConnection;
     private double? _lastDistance;
     private CancellationTokenSource? _neutralCts;
-    private Task? _randomDriveTask;
-    private bool _isRandomDriveActive;
 
     private string _wifiSsidDisplay = "Wi‑Fi: --";
     private string _wifiIpDisplay = "IP: --";
@@ -740,42 +737,10 @@
         }
     }
 
-    private void HandleFullscreenClick()
-    {
-        if (_isRandomDriveActive)
-        {
-            Controller.StopRandomDrive();
-            _isRandomDriveActive = false;
-            return;
-        }
-
-        _randomDriveTask = Controller.StartRandomDrive(
-            forwardSpeed: 50,
-            turnSpeed: 40,
-            obstacleDistanceCm: 20.0,
-            clearDistanceCm: 30.0);
-
-        _isRandomDriveActive = true;
-    }
-
     public async ValueTask DisposeAsync()
     {
         _neutralCts?.Cancel();
         _neutralCts?.Dispose();
-
-        Controller.StopRandomDrive();
-        _isRandomDriveActive = false;
-
-        if (_randomDriveTask is not null)
-        {
-            try
-            {
-                await _randomDriveTask.ConfigureAwait(false);
-            }
-            catch
-            {
-            }
-        }
 
         if (_hubConnection is not null)
         {
