@@ -2,7 +2,7 @@
 
 # 🤖 Tobot - .NET Robotics Platform for Raspberry Pi
 
-> **Modern robotics meets modern .NET** - A unified C# driver and demo platform for Pimoroni Explorer HAT, Pan-Tilt HAT, and ultrasonic sensors on Raspberry Pi
+> **Modern robotics meets modern .NET** - A C# driver and demo platform for Raspberry Pi robotics
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 13](https://img.shields.io/badge/C%23-13.0-239120?logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -14,7 +14,13 @@
 
 ## ? What is Tobot?
 
-**Tobot** is a complete .NET robotics platform combining custom 3D-printed hardware with professional-grade software to create a powerful, extensible robot built for the future. Based on a collection of exceptional **Pimoroni** components (Explorer HAT Pro, Pan-Tilt HAT, Stack HAT, Blinkt!, and more), Tobot features a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers.
+**Tobot** is a complete .NET robotics platform combining custom 3D-printed hardware with professional-grade software to create a powerful, extensible robot built for the future. The current robot is based on a **Pimoroni Explorer HAT Pro**, with a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers.
+
+> **Tobot v4 direction:** The next major version will favor standard, widely
+> supported controls and components (such as standard servos and motor
+> controllers) over specialized add-on HATs like the Pimoroni Pan-Tilt HAT.
+> The Pan-Tilt HAT driver and its dependent demos have been removed from this
+> project as part of that transition.
 
 At its core, Tobot is designed to run on **two Raspberry Pi boards** working in tandem—providing ample compute power for computer vision, machine learning, autonomous navigation, and real-time control. One Pi handles hardware interfacing and motor control, while the second can focus on AI workloads, web services, or video processing.
 
@@ -97,7 +103,6 @@ Tobot's hardware foundation is built on exceptional components from the amazing 
 | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | **[Explorer HAT Pro](https://shop.pimoroni.com/products/explorer-hat)**                                                              | Motor drivers, LEDs, analog inputs, digital I/O, and capacitive touch | [Buy Now](https://shop.pimoroni.com/products/explorer-hat)                                                                |
 | **[pHAT Stack HAT](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC)** | Stacking connector for adding multiple HATs                           | [Buy Now](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC) |
-| **[Pan-Tilt HAT](https://shop.pimoroni.com/products/pan-tilt-hat)**                                                                  | Servo-driven camera mount for dynamic viewing                         | [Buy Now](https://shop.pimoroni.com/products/pan-tilt-hat)                                                                |
 | **[Blinkt!](https://shop.pimoroni.com/products/blinkt)**                                                                             | 8 RGB LED strip for visual feedback                                   | [Buy Now](https://shop.pimoroni.com/products/blinkt)                                                                      |
 
 **Additional Components:**
@@ -198,96 +203,14 @@ A professional-grade driver library for the Explorer HAT with:
 | **👆 Touch**    | `TouchSensor`, `TouchCollection`       | Capacitive touch via CAP1208               |
 | **📐 Distance** | `HcSr04Sensor`                         | Ultrasonic range finding with averaging    |
 
-#### 🧭 Pan-Tilt HAT
-
-Support for the Pimoroni Pan-Tilt HAT is baked into `TobotController`, which proxies every motion command to the onboard microcontroller at I2C address `0x15` (same protocol as the official Python library).
-
-- Access via `TobotController.SetPanAngle`, `SetTiltAngle`, `PanTilt`, and `GetPanTiltAngles`
-- Configurable idle timeout (query with `GetPanTiltIdleTimeout`)
-- Automatic servo enable/disable and retry handling
-
-Example:
-
-```csharp
-using Tobot.Device;
-
-using var controller = new TobotController();
-
-// Center
-controller.PanTilt(0, 0);
-
-// Move
-controller.SetPanAngle(30);
-controller.SetTiltAngle(-10);
-
-// Read back (optional)
-var (pan, tilt) = controller.GetPanTiltAngles();
-Console.WriteLine($"Pan: {pan}°, Tilt: {tilt}°");
-```
-
-Notes:
-- Requires I2C enabled on the Pi (`raspi-config`) and device visible at `0x15` (`i2cdetect -y 1`).
-- Servos need an adequate 5V supply connected to the HAT; the Pi’s USB power is not sufficient to drive servos.
-- Default servo pulse range is 575–2325 µs (≈ -90°…+90°). Idle timeout defaults to 2s.
-
 #### 📐 HC-SR04 Ultrasonic Distance
 
-`TobotController` wraps the HC-SR04 ultrasonic range finder via the `HcSr04Sensor` manager, providing both basic distance measurement and advanced directed object detection.
+`TobotController` wraps the HC-SR04 ultrasonic range finder via the `HcSr04Sensor` manager and provides basic distance measurement.
 
 **Basic Distance Reading:**
 - Call `TryReadDistance` for non-throwing reads or `ReadDistance` to enforce a measurement
 - Adjustable sample count for noise reduction (defaults to 5 readings)
 - Shares the controller's GPIO instance so trigger/echo pins are automatically managed
-
-**Directed Object Detection:**
-The HC-SR04 sensor can determine if an object is to the left, center, or right when combined with the Pan-Tilt HAT. Two approaches are supported:
-
-1. **Autonomous Sweep Detection** (`FindClosestObject`) - The sensor actively sweeps left to right (-45° to +45°) and reports the closest object's direction
-2. **Direction Classification** (`GetObjectDirection`) - Lightweight direction labeling based on current pan angle without sweeping (use when pan is controlled externally)
-
-Example - Autonomous Detection:
-
-```csharp
-using Tobot.Device;
-
-using var controller = new TobotController();
-
-var detectedObject = controller.FindClosestObject();
-if (detectedObject != null)
-{
-    Console.WriteLine($"Distance: {detectedObject.Distance:F1} cm");
-    Console.WriteLine($"Direction: {detectedObject.Direction}"); // Left, Center, or Right
-    Console.WriteLine($"Pan angle: {detectedObject.PanAngle}°");
-}
-```
-
-Example - Simple Direction Classification:
-
-```csharp
-using Tobot.Device;
-
-using var controller = new TobotController();
-
-// Position pan manually (your control logic)
-controller.SetPanAngle(-30);
-Thread.Sleep(500);
-
-// Read distance and get direction classification
-if (controller.TryReadDistanceWithDirection(-30, out double distanceCm, out var direction))
-{
-    Console.WriteLine($"Distance: {distanceCm:F1} cm");
-    Console.WriteLine($"Direction: {direction}"); // Left, Center, or Right
-}
-
-// Or just get direction without distance reading
-var objectDirection = controller.GetObjectDirection(-30);
-Console.WriteLine($"Object is to the {objectDirection}");
-```
-
-**Direction Classification:**
-- **Left**: Pan angle < -5°
-- **Center**: Pan angle between -5° and +5°
-- **Right**: Pan angle > +5°
 
 ### 🎮 Tobot Console Application
 
@@ -301,7 +224,6 @@ An interactive showcase featuring:
 - **Touch Demo** - Capacitive touch detection
 - **Robot System** - Complete autonomous control
 - **System Check** - Hardware diagnostics
-- **Pan-Tilt Demo** - Servo movement showcase
 - **HC-SR04 Distance** - Ultrasonic range finding
 - **Observable Distance** - Reactive sensor monitoring
 - **Random Drive** - Autonomous obstacle avoidance
@@ -486,7 +408,6 @@ PiSystemInfo.StartTemperaturePublishing();
 
 - Raspberry Pi (any model with 40-pin GPIO)
 - Pimoroni Explorer HAT
-- Pimoroni PanTilt HAT
 - HC-SR04 ultrasonic sensor
 - .NET 10 SDK
 
@@ -585,11 +506,12 @@ Tobot/
 │   │   ├── Analog/                    Analog input package
 │   │   ├── Digital/                   Digital I/O package
 │   │   └── Touch/                     Touch sensor package
+│   ├── MotorHat/                      Adafruit PCA9685 Motor HAT driver
+│   │   ├── MotorKit.cs                Motor and stepper controller
+│   │   ├── Motor/                     DC and stepper motor controls
+│   │   └── README.md                  Setup, examples, and API overview
 │   ├── HcSr04/                        Ultrasonic distance helpers
 │   │   └── HcSr04.cs                  High-level HC-SR04 manager
-│   └── PanTiltHat/                    Pan-Tilt HAT (MCU @ 0x15)
-│       ├── PanTiltHat.cs              High-level pan/tilt API (MCU protocol)
-│       └── Pca9685.cs                 (Optional) PCA9685 helper (not required for MCU mode)
 │
 ├── Tobot.Web/                         Web control interface
 │   ├── Program.cs                     ASP.NET Core application
@@ -638,6 +560,21 @@ controller.DriveMotor(1, 75);    // 75% forward
 controller.DriveMotor(1, -50);   // 50% backward
 controller.StopMotors();         // Emergency stop
 ```
+
+For a separate **Adafruit PCA9685 Motor HAT**, use the `MotorKit` driver rather
+than `TobotController`:
+
+```csharp
+using Tobot.Device.MotorHat;
+
+using var kit = new MotorKit();
+kit.Motor1.Forward(0.6);
+// Stop() disables the H-bridge outputs; Brake() actively brakes.
+kit.Motor1.Stop();
+```
+
+See the [MotorKit setup guide and DC/stepper examples](Tobot.Device/MotorHat/README.md)
+for hardware setup, configuration, safe cleanup, and shared-channel details.
 
 ### 💡 LED Control
 ```csharp
@@ -689,30 +626,6 @@ else
 {
     Console.WriteLine("Measurement failed");
 }
-```
-
-Directed object detection (with Pan-Tilt HAT):
-```csharp
-// Option 1: Autonomous sweep - finds closest object and its direction
-var detected = controller.FindClosestObject();
-if (detected != null)
-{
-    Console.WriteLine($"Closest object: {detected.Distance:F1} cm");
-    Console.WriteLine($"Direction: {detected.Direction}"); // Left, Center, or Right
-}
-
-// Option 2: Simple direction classification
-// (use when pan is controlled externally)
-controller.SetPanAngle(-30);
-Thread.Sleep(500);
-
-if (controller.TryReadDistanceWithDirection(-30, out double distance, out var direction))
-{
-    Console.WriteLine($"Object at {distance:F1} cm to the {direction}");
-}
-
-// Or just classify direction without distance reading
-var dir = controller.GetObjectDirection(-30); // Left, Center, or Right
 ```
 
 ---
@@ -917,7 +830,6 @@ The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml
 
 ### Current Features
 - Complete Explorer HAT driver
-- Pan-Tilt HAT (experimental)
 - Interactive demo application
 - Comprehensive documentation
 - Package-based architecture

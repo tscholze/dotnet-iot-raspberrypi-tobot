@@ -54,12 +54,6 @@ public static class TobotHubEvents
     public const string LightShowStarted = nameof(LightShowStarted);
 
     /// <summary>
-    /// Event sent when pan/tilt is changed.
-    /// Parameters: pan (double), tilt (double)
-    /// </summary>
-    public const string PanTiltChanged = nameof(PanTiltChanged);
-
-    /// <summary>
     /// Event sent when random drive starts.
     /// Parameters: forwardSpeed (int), turnSpeed (int), obstacleDistanceCm (double), clearDistanceCm (double)
     /// </summary>
@@ -70,18 +64,6 @@ public static class TobotHubEvents
     /// Parameters: none
     /// </summary>
     public const string RandomDriveStopped = nameof(RandomDriveStopped);
-
-    /// <summary>
-    /// Event sent after a detection sweep completes.
-    /// Parameters: distanceCm (double), panAngle (int), direction (string)
-    /// </summary>
-    public const string ObjectDetectionCompleted = nameof(ObjectDetectionCompleted);
-
-    /// <summary>
-    /// Event sent after a direction classification measurement.
-    /// Parameters: panAngle (int), distanceCm (double), direction (string)
-    /// </summary>
-    public const string DirectionClassified = nameof(DirectionClassified);
 
     /// <summary>
     /// Event sent periodically with Pi system status.

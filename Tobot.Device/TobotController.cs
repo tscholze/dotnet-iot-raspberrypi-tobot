@@ -5,12 +5,11 @@ using System.Reactive.Subjects;
 using Tobot.Device.ExplorerHat.Motor;
 using Tobot.Device.HcSr04;
 using ExplorerHatDevice = Tobot.Device.ExplorerHat.ExplorerHat;
-using PanTiltHatDevice = Tobot.Device.PanTiltHat.PanTiltHat;
 
 namespace Tobot.Device;
 
 /// <summary>
-/// Central orchestrator that wires up all Tobot peripherals (Explorer HAT, Pan-Tilt HAT, HC-SR04).
+/// Central orchestrator that wires up Tobot peripherals (Explorer HAT and HC-SR04).
 /// Provides shared GPIO access, lazy component initialization, and convenience helpers for higher-level apps.
 /// </summary>
 public sealed class TobotController : IDisposable
@@ -24,11 +23,6 @@ public sealed class TobotController : IDisposable
 	/// Cached Explorer HAT instance (created on first use).
 	/// </summary>
 	private ExplorerHatDevice? _explorerHat;
-
-	/// <summary>
-	/// Cached Pan-Tilt HAT instance (created on first use).
-	/// </summary>
-	private PanTiltHatDevice? _panTiltHat;
 
 	/// <summary>
 	/// Cached HC-SR04 distance sensor (created on first use).
@@ -86,18 +80,6 @@ public sealed class TobotController : IDisposable
 		{
 			EnsureNotDisposed();
 			return _explorerHat ??= new ExplorerHatDevice();
-		}
-	}
-
-	/// <summary>
-	/// Gets the Pan-Tilt HAT abstraction, creating it on first use.
-	/// </summary>
-	private PanTiltHatDevice PanTiltHat
-	{
-		get
-		{
-			EnsureNotDisposed();
-			return _panTiltHat ??= new PanTiltHatDevice();
 		}
 	}
 
@@ -378,58 +360,6 @@ public sealed class TobotController : IDisposable
 	}
 
 	/// <summary>
-	/// Moves the Pan-Tilt HAT to the desired pan/tilt angles.
-	/// </summary>
-	/// <param name="panDegrees">Pan angle in degrees (-90 to 90 typical).</param>
-	/// <param name="tiltDegrees">Tilt angle in degrees (-45 to 45 typical).</param>
-	public void PanTilt(double panDegrees, double tiltDegrees)
-	{
-		EnsureNotDisposed();
-		PanTiltHat.Pan((int)Math.Round(panDegrees));
-		PanTiltHat.Tilt((int)Math.Round(tiltDegrees));
-	}
-
-	/// <summary>
-	/// Gets the current pan and tilt angles as reported by the servo controller.
-	/// </summary>
-	/// <returns>Tuple containing the current pan and tilt angles.</returns>
-	public (double Pan, double Tilt) GetPanTiltAngles()
-	{
-		EnsureNotDisposed();
-		return (PanTiltHat.GetPan(), PanTiltHat.GetTilt());
-	}
-
-	/// <summary>
-	/// Sets only the pan axis to the desired angle.
-	/// </summary>
-	/// <param name="panDegrees">Pan angle in degrees.</param>
-	public void SetPanAngle(double panDegrees)
-	{
-		EnsureNotDisposed();
-		PanTiltHat.Pan((int)Math.Round(panDegrees));
-	}
-
-	/// <summary>
-	/// Sets only the tilt axis to the desired angle.
-	/// </summary>
-	/// <param name="tiltDegrees">Tilt angle in degrees.</param>
-	public void SetTiltAngle(double tiltDegrees)
-	{
-		EnsureNotDisposed();
-		PanTiltHat.Tilt((int)Math.Round(tiltDegrees));
-	}
-
-	/// <summary>
-	/// Gets the current Pan-Tilt HAT idle timeout value.
-	/// </summary>
-	/// <returns>Timeout in seconds.</returns>
-	public double GetPanTiltIdleTimeout()
-	{
-		EnsureNotDisposed();
-		return PanTiltHat.IdleTimeout;
-	}
-
-	/// <summary>
 	/// Attempts to read the HC-SR04 distance sensor and returns the latest value in centimeters.
 	/// </summary>
 	/// <param name="distanceCm">Distance output in centimeters.</param>
@@ -450,66 +380,6 @@ public sealed class TobotController : IDisposable
 	{
 		EnsureNotDisposed();
 		return UltrasonicSensor.ReadDistance(samples);
-	}
-
-	/// <summary>
-	/// Performs an autonomous pan sweep to detect the closest object within the field of view.
-	/// Returns a <see cref="DetectedObject"/> with distance and directional information (left, center, or right).
-	/// </summary>
-	/// <param name="samples">Number of samples to average per pan angle. Default is 5.</param>
-	/// <param name="sweepIncrement">Degrees to increment between pan measurements. Default is 5° (smaller = finer resolution).</param>
-	/// <param name="cancellationToken">Token used to cancel the sweep early.</param>
-	/// <returns>
-	/// A <see cref="DetectedObject"/> containing the distance and direction of the closest object,
-	/// or <c>null</c> if no object is detected during the sweep.
-	/// </returns>
-	/// <remarks>
-	/// This method sweeps from -45° (left) to +45° (right). The sensor dwells for 200ms at each pan angle
-	/// to allow the servo to settle before taking a measurement. Objects are classified as left, center,
-	/// or right based on the pan angle where the closest distance is found.
-	/// </remarks>
-	public DetectedObject? FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5, CancellationToken cancellationToken = default)
-	{
-		EnsureNotDisposed();
-		return UltrasonicSensor.FindClosestObject(PanTiltHat, samples, sweepIncrement, cancellationToken);
-	}
-
-	/// <summary>
-	/// Disables both pan and tilt servos to stop movement and reduce power draw.
-	/// </summary>
-	public void DisablePanTilt()
-	{
-		EnsureNotDisposed();
-		PanTiltHat.ServoEnable(1, false);
-		PanTiltHat.ServoEnable(2, false);
-	}
-
-	/// <summary>
-	/// Determines the direction of a detected object based on the current pan angle.
-	/// This is a lightweight alternative to <see cref="FindClosestObject"/> for use when the pan angle
-	/// is controlled externally (user input, other navigation logic, etc.).
-	/// </summary>
-	/// <param name="panAngleDegrees">Current pan angle in degrees (-90 to +90). Values at center (±5°) are classified as centered.</param>
-	/// <returns>The direction classification of the object (Left, Center, or Right).</returns>
-	public ObjectDirection GetObjectDirection(int panAngleDegrees)
-	{
-		EnsureNotDisposed();
-		return UltrasonicSensor.GetObjectDirection(panAngleDegrees);
-	}
-
-	/// <summary>
-	/// Reads the distance at the current pan angle and classifies the object direction.
-	/// Combines distance reading with direction classification in a single call.
-	/// </summary>
-	/// <param name="panAngleDegrees">Current pan angle in degrees (-90 to +90).</param>
-	/// <param name="distanceCm">Measured distance in centimeters when the method succeeds.</param>
-	/// <param name="direction">Direction classification of the object at the current pan angle.</param>
-	/// <param name="samples">Number of samples to average.</param>
-	/// <returns>True when a measurement succeeds; otherwise false.</returns>
-	public bool TryReadDistanceWithDirection(int panAngleDegrees, out double distanceCm, out ObjectDirection direction, int samples = HcSr04Sensor.DefaultSamplesPerReading)
-	{
-		EnsureNotDisposed();
-		return UltrasonicSensor.TryReadDistanceWithDirection(panAngleDegrees, out distanceCm, out direction, samples);
 	}
 
 	/// <summary>
@@ -601,7 +471,6 @@ public sealed class TobotController : IDisposable
 		EnsureNotDisposed();
 		StopRandomDrive();
 		StopMotors();
-		DisablePanTilt();
 		SetAllLeds(false);
 		SetAllDigitalOutputs(false);
 	}
@@ -721,7 +590,6 @@ public sealed class TobotController : IDisposable
 		_distanceSubject.OnCompleted();
 		_distanceSubject.Dispose();
 		_distanceSensor?.Dispose();
-		_panTiltHat?.Dispose();
 		_explorerHat?.Dispose();
 		if (_gpioController.IsValueCreated)
 		{
