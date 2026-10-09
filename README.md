@@ -10,6 +10,12 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/actions/workflows/ci.yml/badge.svg)](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/actions/workflows/ci.yml)
 
+> [!IMPORTANT]
+> **Looking for a finished version?** Use the git tag
+> [`v2`](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/releases/tag/v2)
+> or the related release on GitHub. The `main` branch contains ongoing work for
+> future versions of Tobot and may be incomplete or change at any time.
+
 ---
 
 ## ? What is Tobot?
