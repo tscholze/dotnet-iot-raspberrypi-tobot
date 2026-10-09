@@ -49,7 +49,7 @@ We welcome contributions in many forms:
 ### Prerequisites
 
 - Raspberry Pi with Explorer HAT (for hardware testing)
-- .NET 9 SDK installed
+- .NET 10 SDK installed
 - Git for version control
 - Familiarity with C# and GitHub workflow
 

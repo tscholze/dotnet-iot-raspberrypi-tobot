@@ -164,7 +164,7 @@ The public API remains identical. The reorganization is internal only - all clas
 ? **All packages compile successfully**  
 ? **No breaking changes to public API**  
 ? **Full XML documentation maintained**  
-? **Compatible with .NET 9 and C# 13**
+? **Compatible with .NET 10 and C# 13**
 
 ---
 

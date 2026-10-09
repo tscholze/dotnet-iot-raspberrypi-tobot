@@ -1,4 +1,4 @@
-# Explorer HAT for .NET 9
+# Explorer HAT for .NET 10
 
 A modern C# implementation of the Pimoroni Explorer HAT driver for Raspberry Pi.
 
@@ -201,7 +201,7 @@ See `ExplorerHatExample.cs` for complete examples including:
 
 ## Requirements
 
-- .NET 9.0 or later
+- .NET 10.0 or later
 - Raspberry Pi with Explorer HAT hardware
 - Linux OS (typically Raspberry Pi OS)
 - I2C must be enabled on the Raspberry Pi
