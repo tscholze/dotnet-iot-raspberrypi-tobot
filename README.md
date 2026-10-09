@@ -135,7 +135,7 @@ Tobot is built entirely on the **modern .NET ecosystem**, leveraging cutting-edg
 | --------------------------- | -------------------------- | -------------------------------------------- |
 | **Framework**               | .NET 10                    | Modern runtime with C# 13 language features  |
 | **Web UI**                  | ASP.NET Core Blazor        | Interactive, real-time web interface         |
-| **Desktop UI (Linux)**      | .NET MAUI + GTK4 preview   | Fullscreen bot face app for Raspberry Pi GNOME |
+| **Desktop UI (Linux)**      | Not included in v3         | The .NET MAUI + GTK example is available in v2 |
 | **Real-time Communication** | SignalR                    | Bidirectional communication for live updates |
 | **Hardware Access**         | System.Device.Gpio NuGet   | Low-level GPIO, I2C, PWM control             |
 | **Operating System**        | Raspberry Pi OS (Bookworm) | Official, stock Raspberry Pi distribution    |
@@ -291,53 +291,9 @@ Use cases:
 - Create custom control buttons/links
 - Automate robot behavior via HTTP requests
 
-### 🖥️ Tobot.Gtk Application
+### 🖥️ MAUI GTK Example
 
-A C#-only Linux desktop app built with .NET MAUI GTK4 preview, optimized for Raspberry Pi with GNOME desktop.
-
-Features:
-- Fullscreen animated bot face
-- Portrait-friendly layout for 5-inch displays
-- GraphicsView-based rendering for better GTK preview stability
-- Lightweight status overlays (distance and system line)
-
-Linux dependencies (required before build/run):
-
-```bash
-sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev
-```
-
-Run:
-
-```bash
-dotnet run --project Tobot.Gtk
-```
-
-Autostart on GNOME (login):
-
-```bash
-mkdir -p ~/.config/autostart
-cat > ~/.config/autostart/tobot-gtk.desktop <<'EOF'
-[Desktop Entry]
-Type=Application
-Name=Tobot GTK
-Comment=Start Tobot.Gtk in fullscreen
-Terminal=false
-Path=/home/$USER/tobot
-Exec=/usr/bin/env bash -lc 'cd /home/$USER/tobot && dotnet run --project Tobot.Gtk'
-X-GNOME-Autostart-enabled=true
-EOF
-```
-
-Notes:
-- Adjust `/home/$USER/tobot` if your repository is in a different folder.
-- Keep `MainPage` fullscreen behavior enabled so the app opens directly in fullscreen after login.
-
-Disable autostart:
-
-```bash
-rm -f ~/.config/autostart/tobot-gtk.desktop
-```
+The MAUI GTK desktop example is part of the v2 release but is no longer included in v3. To view or run that code, check out the `v2` tag.
 
 ### 🎮 Tobot.PicoRemote Application
 
@@ -416,12 +372,6 @@ PiSystemInfo.StartTemperaturePublishing();
 - Pimoroni Explorer HAT
 - HC-SR04 ultrasonic sensor
 - .NET 10 SDK
-
-For the optional `Tobot.Gtk` Linux desktop app (Raspberry Pi OS with GNOME):
-
-```bash
-sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev
-```
 
 ### Installation
 
@@ -529,12 +479,6 @@ Tobot/
 │           ├── Simple.razor           Styled control interface
 │           ├── Remote.razor           URL-triggered control interface
 │           └── Bot.razor              Animated reactive eyes
-│
-├── Tobot.Gtk/                         Linux GTK desktop app (MAUI GTK4 preview)
-│   ├── Program.cs                     Linux entry point and GTK env setup
-│   ├── MauiProgram.cs                 MAUI app builder and window lifecycle
-│   ├── App.cs                         Application shell/window creation
-│   └── MainPage.cs                    Fullscreen bot face rendering UI
 │
 ├── Tobot.Pi/                          Raspberry Pi system telemetry library
 │   ├── PiSystemInfo.cs                Host/IP (Wi‑Fi), SSID, CPU temp, load avg, memory, disk (GiB), uptime, CPU freq
