@@ -15,6 +15,7 @@
 > [`v2`](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/releases/tag/v2)
 > or the related release on GitHub. The `main` branch contains ongoing work for
 > future versions of Tobot and may be incomplete or change at any time.
+> The GTK desktop app and Pan-Tilt HAT implementation are available in the v2 release.
 
 ---
 
