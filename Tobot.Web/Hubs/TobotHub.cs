@@ -90,57 +90,7 @@ public class TobotHub(ExplorerHat explorerHat, Device.TobotController controller
 
     #endregion
 
-    #region Pan/Tilt Control
-
-    /// <summary>
-    /// Sets both pan and tilt.
-    /// </summary>
-    public async Task SetPanTilt(double panDegrees, double tiltDegrees)
-    {
-        _controller.PanTilt(panDegrees, tiltDegrees);
-        var (pan, tilt) = _controller.GetPanTiltAngles();
-        await Clients.All.SendAsync(TobotHubEvents.PanTiltChanged, pan, tilt);
-    }
-
-    /// <summary>
-    /// Sets pan angle only.
-    /// </summary>
-    public async Task SetPan(double panDegrees)
-    {
-        _controller.SetPanAngle(panDegrees);
-        var (pan, tilt) = _controller.GetPanTiltAngles();
-        await Clients.All.SendAsync(TobotHubEvents.PanTiltChanged, pan, tilt);
-    }
-
-    /// <summary>
-    /// Sets tilt angle only.
-    /// </summary>
-    public async Task SetTilt(double tiltDegrees)
-    {
-        _controller.SetTiltAngle(tiltDegrees);
-        var (pan, tilt) = _controller.GetPanTiltAngles();
-        await Clients.All.SendAsync(TobotHubEvents.PanTiltChanged, pan, tilt);
-    }
-
-    /// <summary>
-    /// Gets current pan and tilt angles.
-    /// </summary>
-    public (double pan, double tilt) GetPanTilt()
-    {
-        return _controller.GetPanTiltAngles();
-    }
-
-    /// <summary>
-    /// Gets Pan-Tilt idle timeout.
-    /// </summary>
-    public double GetPanTiltIdleTimeout()
-    {
-        return _controller.GetPanTiltIdleTimeout();
-    }
-
-    #endregion
-
-    #region Distance & Detection
+    #region Distance
 
     /// <summary>
     /// Reads distance once; returns null if measurement fails.
@@ -168,45 +118,6 @@ public class TobotHub(ExplorerHat explorerHat, Device.TobotController controller
     {
         _distanceSubscription?.Dispose();
         _distanceSubscription = null;
-    }
-
-    /// <summary>
-    /// Performs a detection sweep and broadcasts the result.
-    /// </summary>
-    public async Task<DetectedObject?> FindClosestObject(int samples = HcSr04Sensor.DefaultSamplesPerReading, int sweepIncrement = 5, CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
-
-        var result = _controller.FindClosestObject(samples, sweepIncrement, cancellationToken);
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
-
-        if (result != null)
-        {
-            await Clients.All.SendAsync(TobotHubEvents.ObjectDetectionCompleted, result.Distance, result.PanAngle, result.Direction.ToString(), cancellationToken);
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Reads distance and classifies direction at a given pan angle; broadcasts result.
-    /// </summary>
-    public async Task<(double? distanceCm, string direction)> TryReadDistanceWithDirection(int panAngleDegrees, int samples = HcSr04Sensor.DefaultSamplesPerReading)
-    {
-        if (_controller.TryReadDistanceWithDirection(panAngleDegrees, out double distanceCm, out ObjectDirection direction, samples))
-        {
-            await Clients.All.SendAsync(TobotHubEvents.DirectionClassified, panAngleDegrees, distanceCm, direction.ToString());
-            return (distanceCm, direction.ToString());
-        }
-
-        await Clients.All.SendAsync(TobotHubEvents.DirectionClassified, panAngleDegrees, null, ObjectDirection.Center.ToString());
-        return (null, ObjectDirection.Center.ToString());
     }
 
     #endregion

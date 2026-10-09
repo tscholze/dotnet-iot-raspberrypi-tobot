@@ -49,16 +49,13 @@ class Program
             Console.WriteLine("│  06. Touch Sensor Demo       - Capacitive touch          │");
             Console.WriteLine("│  07. Robot Control System    - Complete robot control    │");
             Console.WriteLine("│  08. System Status Check     - Test all components       │");
-            Console.WriteLine("│  09. Pan-Tilt HAT Demo       - Move pan & tilt servos    │");
-            Console.WriteLine("│  10. HC-SR04 Distance Demo   - Ultrasonic range test     │");
-            Console.WriteLine("│  11. Observable Distance     - Reactive distance monitor │");
-            Console.WriteLine("│  12. Random Drive Demo       - Autonomous obstacle avoid │");
-            Console.WriteLine("│  13. Directed Detection      - Find object direction     │");
-            Console.WriteLine("│  14. Direction Classifier    - Simple direction labeling │");
-            Console.WriteLine("│  15. Pi System Info          - Host/IP/CPU temp          │");
+            Console.WriteLine("│  09. HC-SR04 Distance Demo   - Ultrasonic range test     │");
+            Console.WriteLine("│  10. Observable Distance     - Reactive distance monitor │");
+            Console.WriteLine("│  11. Random Drive Demo       - Autonomous obstacle avoid │");
+            Console.WriteLine("│  12. Pi System Info          - Host/IP/CPU temp          │");
             Console.WriteLine("│  0. Exit                                                 │");
             Console.WriteLine("└──────────────────────────────────────────────────────────┘");
-            Console.Write("\nEnter your choice (0-15): ");
+            Console.Write("\nEnter your choice (0-12): ");
 
             string? choice = Console.ReadLine();
             Console.WriteLine();
@@ -90,31 +87,22 @@ class Program
                     RunSystemCheck(controller);
                     break;
                 case "9":
-                    RunPanTiltDemo(controller);
-                    break;
-                case "10":
                     RunHcSr04Demo(controller);
                     break;
-                case "11":
+                case "10":
                     RunObservableDistanceDemo(controller);
                     break;
-                case "12":
+                case "11":
                     RunRandomDriveDemo(controller);
                     break;
-                case "13":
-                    RunDirectedObjectDetectionDemo(controller);
-                    break;
-                case "14":
-                    RunDirectionClassifierDemo(controller);
-                    break;
-                case "15":
+                case "12":
                     RunPiSystemInfoDemo();
                     break;
                 case "0":
                     Console.WriteLine("Exiting Explorer HAT Demo. Goodbye!");
                     return;
                 default:
-                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-15.");
+                    Console.WriteLine("⚠️  Invalid choice. Please enter 0-12.");
                     break;
             }
 
@@ -155,9 +143,6 @@ class Program
             case "check":
                 RunSystemCheck(controller);
                 break;
-            case "pantilt":
-                RunPanTiltDemo(controller);
-                break;
             case "hcsr04":
             case "ultrasonic":
                 RunHcSr04Demo(controller);
@@ -170,11 +155,6 @@ class Program
             case "autonomous":
                 RunRandomDriveDemo(controller);
                 break;
-            case "detection":
-            case "classifier":
-            case "direction":
-                RunDirectionClassifierDemo(controller);
-                break;
             case "pi":
             case "sysinfo":
             case "systeminfo":
@@ -182,7 +162,7 @@ class Program
                 break;
             default:
                 Console.WriteLine($"Unknown example: {exampleName}");
-                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, pantilt, hcsr04, observable, randomdrive, detection, classifier, pi");
+                Console.WriteLine("Available: led, input, output, analog, motor, touch, robot, check, hcsr04, observable, randomdrive, pi");
                 break;
         }
     }
@@ -808,242 +788,6 @@ class Program
         {
             Console.WriteLine($"❌ Error: {ex.Message}");
             controller.StopRandomDrive();
-        }
-    }
-
-    /// <summary>
-    /// Demonstrates the Pan-Tilt HAT by sweeping pan and tilt angles.
-    /// Requires a Pimoroni Pan-Tilt HAT connected via I2C (default address 0x15).
-    /// </summary>
-    static void RunPanTiltDemo(TobotController controller)
-    {
-        Console.WriteLine("🎯 Pan-Tilt HAT Demo");
-        Console.WriteLine("═══════════════════════════════════════");
-        Console.WriteLine("Demonstrating pan and tilt servo control...\n");
-
-        try
-        {
-            // Center position (0°, 0°)
-            Console.WriteLine("▶ Centering servos...");
-            controller.PanTilt(0, 0);
-            Thread.Sleep(1000);
-
-            // Sweep pan: -60° -> +60°
-            Console.WriteLine("\n▶ Pan sweep: -60° to +60°");
-            for (int a = -60; a <= 60; a += 15)
-            {
-                controller.SetPanAngle(a);
-                var current = controller.GetPanTiltAngles().Pan;
-                Console.WriteLine($"  Pan: {a}° (current: {current}°)");
-                Thread.Sleep(250);
-            }
-		
-            // Return to center
-            Console.WriteLine("\n▶ Returning to center...");
-            for (int a = 60; a >= 0; a -= 15)
-            {
-                controller.SetPanAngle(a);
-                Thread.Sleep(200);
-            }
-
-            // Sweep tilt: -30° -> +30°
-            Console.WriteLine("\n▶ Tilt sweep: -30° to +30°");
-            for (int a = -30; a <= 30; a += 10)
-            {
-                controller.SetTiltAngle(a);
-                var current = controller.GetPanTiltAngles().Tilt;
-                Console.WriteLine($"  Tilt: {a}° (current: {current}°)");
-                Thread.Sleep(300);
-            }
-		
-            // Return to center
-            Console.WriteLine("\n▶ Returning to center...");
-            for (int a = 30; a >= 0; a -= 10)
-            {
-                controller.SetTiltAngle(a);
-                Thread.Sleep(200);
-            }
-
-            // Combined movement demonstration
-            Console.WriteLine("\n▶ Combined movement pattern");
-            controller.SetPanAngle(-45);
-            controller.SetTiltAngle(20);
-            Console.WriteLine("  Position: (-45°, 20°)");
-            Thread.Sleep(600);
-		
-            controller.SetPanAngle(45);
-            controller.SetTiltAngle(-20);
-            Console.WriteLine("  Position: (45°, -20°)");
-            Thread.Sleep(600);
-		
-            controller.PanTilt(0, 0);
-            Console.WriteLine("  Position: (0°, 0°) - Centered");
-            Thread.Sleep(500);
-
-            // Read back current positions
-            Console.WriteLine("\n▶ Reading positions from device...");
-            var (currentPan, currentTilt) = controller.GetPanTiltAngles();
-            Console.WriteLine($"  Reported Pan: {currentPan}°");
-            Console.WriteLine($"  Reported Tilt: {currentTilt}°");
-
-            Console.WriteLine($"\n▶ Idle timeout: {controller.GetPanTiltIdleTimeout()} seconds");
-            Console.WriteLine("  (Servos will auto-disable after inactivity)\n");
-
-            Console.WriteLine("✅ Pan-Tilt demo complete!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Demonstrates directed object detection using pan-sweep with the HC-SR04 sensor.
-    /// Sweeps the sensor left to right to locate the closest object and report its direction.
-    /// </summary>
-    static void RunDirectedObjectDetectionDemo(TobotController controller)
-    {
-        Console.WriteLine("🎯 Directed Object Detection Demo");
-        Console.WriteLine("═══════════════════════════════════════");
-        Console.WriteLine("Scanning for objects with directional info...\n");
-        Console.WriteLine("Configuration:");
-        Console.WriteLine("  Pan Range: -45° to +45°");
-        Console.WriteLine("  Sweep Increment: 5°");
-        Console.WriteLine("  Samples per Angle: 5");
-        Console.WriteLine("  Object Classification: Left (<-5°), Center (±5°), Right (>5°)");
-        Console.WriteLine();
-
-        try
-        {
-            // Perform multiple detection sweeps
-            for (int sweep = 1; sweep <= 3; sweep++)
-            {
-                Console.WriteLine($"\n▶ Scan {sweep}/3: Sweeping for closest object...");
-                var detected = controller.FindClosestObject();
-
-                if (detected != null)
-                {
-                    Console.WriteLine($"  ✓ Object Detected!");
-                    Console.WriteLine($"    Distance: {detected.Distance:F1} cm");
-                    Console.WriteLine($"    Pan Angle: {detected.PanAngle}°");
-                    Console.WriteLine($"    Direction: {detected.Direction}");
-                    
-                    // Provide directional feedback
-                    string feedback = detected.Direction switch
-                    {
-                        Tobot.Device.HcSr04.ObjectDirection.Left => "◄ Object is to the LEFT",
-                        Tobot.Device.HcSr04.ObjectDirection.Right => "► Object is to the RIGHT",
-                        _ => "● Object is CENTERED"
-                    };
-                    Console.WriteLine($"    {feedback}");
-                }
-                else
-                {
-                    Console.WriteLine("  ✗ No object detected in range.");
-                }
-
-                // Center servos between scans
-                if (sweep < 3)
-                {
-                    Console.WriteLine("  Centering servos...");
-                    controller.PanTilt(0, 0);
-                    Thread.Sleep(800);
-                }
-            }
-
-            // Return to center position
-            Console.WriteLine("\n▶ Returning servos to center...");
-            controller.PanTilt(0, 0);
-            Thread.Sleep(500);
-
-            Console.WriteLine("\n✅ Directed object detection demo complete!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Demonstrates direction classification by manually positioning the pan servo and reading the direction.
-    /// This is a lightweight alternative to autonomous sweeping - useful when pan control is handled externally.
-    /// </summary>
-    static void RunDirectionClassifierDemo(TobotController controller)
-    {
-        Console.WriteLine("🏷️  Direction Classifier Demo");
-        Console.WriteLine("═══════════════════════════════════════");
-        Console.WriteLine("Manual pan positioning with direction classification...\n");
-        Console.WriteLine("Configuration:");
-        Console.WriteLine("  Direction Zones: Left (<-5°), Center (±5°), Right (>5°)");
-        Console.WriteLine("  Method: External pan control + lightweight direction classification");
-        Console.WriteLine();
-
-        try
-        {
-            // Define test positions
-            var testPositions = new[]
-            {
-                (-45, "Far Left"),
-                (-30, "Left"),
-                (-10, "Slightly Left"),
-                (0, "Center"),
-                (10, "Slightly Right"),
-                (30, "Right"),
-                (45, "Far Right")
-            };
-
-            Console.WriteLine("▶ Testing direction classification at various pan angles:\n");
-
-            foreach (var (angle, description) in testPositions)
-            {
-                // Move to position
-                controller.SetPanAngle(angle);
-                Thread.Sleep(400); // Wait for servo to settle
-
-                // Read distance and get direction
-                if (controller.TryReadDistanceWithDirection(angle, out double distanceCm, out var direction))
-                {
-                    // Get visual indicator
-                    string indicator = direction switch
-                    {
-                        Tobot.Device.HcSr04.ObjectDirection.Left => "◄",
-                        Tobot.Device.HcSr04.ObjectDirection.Right => "►",
-                        _ => "●"
-                    };
-
-                    Console.WriteLine($"  [{indicator}] {angle:+00;-00}° | {description,-20} | {distanceCm:F1}cm | Dir: {direction}");
-                }
-                else
-                {
-                    Console.WriteLine($"  [?] {angle:+00;-00}° | {description,-20} | No object detected");
-                }
-            }
-
-            // Return to center
-            Console.WriteLine("\n▶ Returning to center...");
-            controller.PanTilt(0, 0);
-            Thread.Sleep(500);
-
-            // Demonstrate the lighter-weight GetObjectDirection method
-            Console.WriteLine("\n▶ Direction classification examples (without distance reading):");
-            int[] angleTests = { -45, -10, 0, 10, 45 };
-            foreach (int testAngle in angleTests)
-            {
-                var direction = controller.GetObjectDirection(testAngle);
-                string description = direction switch
-                {
-                    Tobot.Device.HcSr04.ObjectDirection.Left => "→ LEFT",
-                    Tobot.Device.HcSr04.ObjectDirection.Right => "← RIGHT",
-                    _ => "→ CENTER ←"
-                };
-                Console.WriteLine($"  Pan {testAngle:+00;-00}°: {description}");
-            }
-
-            Console.WriteLine("\n✅ Direction classifier demo complete!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error: {ex.Message}");
         }
     }
 
