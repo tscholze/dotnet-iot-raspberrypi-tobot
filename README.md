@@ -2,7 +2,7 @@
 
 # 🤖 Tobot - .NET Robotics Platform for Raspberry Pi
 
-> **Modern robotics meets modern .NET** - A C# driver and demo platform for Raspberry Pi robotics
+> **Modern robotics meets modern .NET** - A C# driver and CLI platform for Raspberry Pi robotics
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 13](https://img.shields.io/badge/C%23-13.0-239120?logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -15,7 +15,7 @@
 > [`v2`](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/releases/tag/v2)
 > or the related release on GitHub. The `main` branch contains ongoing work for
 > future versions of Tobot and may be incomplete or change at any time.
-> The GTK desktop app and Pan-Tilt HAT implementation are available in the v2 release.
+> The Explorer HAT demo, GTK desktop app, and Pan-Tilt HAT implementation are available in the v2 release.
 
 ---
 
@@ -38,7 +38,7 @@ The software stack centers around the `TobotController`, a unified C# API that o
 - **⚡ Modern C#** - Leverage C# 13 and .NET 10 features for robotics
 - **📦 Package-Based Architecture** - Logical organization by functionality
 - **📚 Comprehensive Documentation** - XML docs on every member, extensive guides
-- **🎯 Ready-to-Run Demos** - Interactive examples for every feature
+- **⌨️ Command-Line Interface** - An interactive starting point for the next ToBot
 - **🔌 Unified Controller** - One `TobotController` surfaces every LED, motor, sensor, and servo
 - **✅ Production Ready** - Robust error handling and resource management
 - **🎓 Educational** - Perfect for learning robotics and C# together
@@ -161,7 +161,7 @@ No custom kernel modules, no modified OS images - just standard Raspberry Pi OS 
 
 ---
 
-## ⚡ Quick Demo
+## ⚡ Hardware API Example
 
 ```csharp
 using Tobot.Device;
@@ -219,24 +219,11 @@ A professional-grade driver library for the Explorer HAT with:
 - Adjustable sample count for noise reduction (defaults to 5 readings)
 - Shares the controller's GPIO instance so trigger/echo pins are automatically managed
 
-### 🎮 Tobot Console Application
+### 🎮 ToBot CLI
 
-An interactive showcase featuring:
-
-- **LED Light Show** - Mesmerizing patterns and effects
-- **Input Monitor** - Real-time digital input tracking
-- **Output Control** - Power external devices
-- **Analog Reader** - Sensor voltage monitoring
-- **Motor Control** - Precision movement and speed
-- **Touch Demo** - Capacitive touch detection
-- **Robot System** - Complete autonomous control
-- **System Check** - Hardware diagnostics
-- **HC-SR04 Distance** - Ultrasonic range finding
-- **Observable Distance** - Reactive sensor monitoring
-- **Random Drive** - Autonomous obstacle avoidance
-- **Directed Detection** - Autonomous object localization with direction
-- **Direction Classifier** - Manual pan with direction classification
-- **Pi System Info** - Hostname, Wi‑Fi SSID/IP, CPU temp, load, memory, disk, uptime, CPU freq
+The `Tobot` project is the command-line entry point for the next version of
+ToBot. Its interactive shell currently supports `help`, `exit`, and `quit`.
+The previous Explorer HAT demo is available in the [v2 release](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/releases/tag/v2).
 
 ### 🌐 Tobot.Web Application
 
@@ -384,24 +371,9 @@ cd tobot
 # Build the solution
 dotnet build
 
-# Run the interactive demo
+# Run the interactive CLI
 dotnet run --project Tobot
 ```
-
-### Your First Robot in 30 Seconds
-
-```bash
-# Quick system check
-dotnet run --project Tobot check
-
-# LED light show
-dotnet run --project Tobot led
-
-# Full robot control
-dotnet run --project Tobot robot
-```
-
-📖 **Detailed instructions:** See [Tobot/QUICKSTART.md](Tobot/QUICKSTART.md)
 
 ---
 
@@ -450,10 +422,9 @@ Tobot follows a clean, modular architecture:
 
 ```
 Tobot/
-├── Tobot/                             Console demo application
-│   ├── Program.cs                     Interactive demos
-│   ├── README.md                      Usage guide
-│   └── QUICKSTART.md                  5-minute setup
+├── Tobot/                             Interactive CLI
+│   ├── Program.cs                     CLI entry point
+│   └── README.md                      CLI usage
 │
 ├── Tobot.Device/                      Hardware driver library
 │   ├── ExplorerHat/                   Explorer HAT components
@@ -585,8 +556,7 @@ else
 
 | Document                                                                                             | Description            |
 | ---------------------------------------------------------------------------------------------------- | ---------------------- |
-| [Tobot/README.md](Tobot/README.md)                                                                   | Demo application guide |
-| [Tobot/QUICKSTART.md](Tobot/QUICKSTART.md)                                                           | 5-minute setup         |
+| [Tobot/README.md](Tobot/README.md)                                                                   | CLI overview           |
 | [Tobot.Device/ExplorerHat/README.md](Tobot.Device/ExplorerHat/README.md)                             | API reference          |
 | [Tobot.Device/ExplorerHat/FILE_STRUCTURE.md](Tobot.Device/ExplorerHat/FILE_STRUCTURE.md)             | File organization      |
 | [Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md](Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md) | Package guide          |
@@ -628,7 +598,7 @@ else
 
 ### Code Examples
 
-All demos in `Tobot/Program.cs` are fully commented and ready to modify. Each example is self-contained and demonstrates best practices.
+The previous Explorer HAT demo application is available in the [v2 release](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/releases/tag/v2).
 
 ---
 
@@ -781,7 +751,7 @@ The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml
 
 ### Current Features
 - Complete Explorer HAT driver
-- Interactive demo application
+- Interactive CLI starting point
 - Comprehensive documentation
 - Package-based architecture
 
@@ -855,6 +825,6 @@ dotnet run --project Tobot
 
 **Made with ❤️ for makers, educators, and robotics enthusiasts**
 
-[⭐ Star this repo](https://github.com/yourusername/tobot) | [📚 Read the docs](Tobot/README.md) | [🚀 Quick start](Tobot/QUICKSTART.md)
+[⭐ Star this repo](https://github.com/yourusername/tobot) | [📚 Read the docs](Tobot/README.md)
 
 </div>
