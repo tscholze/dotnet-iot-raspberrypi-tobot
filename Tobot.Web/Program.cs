@@ -1,6 +1,5 @@
 using Tobot.Web.Components;
 using Tobot.Web.Hubs;
-using Tobot.Device.ExplorerHat;
 using Tobot.Device;
 using Tobot.Web.Services;
 
@@ -10,25 +9,11 @@ builder.Services
 	.AddRazorComponents()
 	.AddInteractiveServerComponents();
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<ExplorerHat>();
 builder.Services.AddSingleton<TobotController>();
 builder.Services.AddHostedService<DistanceBroadcastService>();
 builder.Services.AddHostedService<PiStatusBroadcastService>();
 
 var app = builder.Build();
-
-var controller = app.Services.GetRequiredService<TobotController>();
-app.Lifetime.ApplicationStopping.Register(() =>
-{
-	try
-	{
-		controller.Stop();
-	}
-	catch
-	{
-		// Best-effort cleanup during shutdown.
-	}
-});
 
 app.UseStaticFiles();
 app.UseAntiforgery();

@@ -48,7 +48,7 @@ We welcome contributions in many forms:
 
 ### Prerequisites
 
-- Raspberry Pi with Explorer HAT (for hardware testing)
+- Raspberry Pi with HC-SR04 and/or PCA9685 Motor HAT (for hardware testing)
 - .NET 10 SDK installed
 - Git for version control
 - Familiarity with C# and GitHub workflow
@@ -107,7 +107,7 @@ We follow standard C# conventions:
 ### Example Code Style
 
 ```csharp
-namespace Tobot.Device.ExplorerHat.Motor;
+namespace Tobot.Device.MotorHat.Motor;
 
 /// <summary>
 /// Represents a single motor with H-bridge control.
@@ -154,7 +154,7 @@ public class Motor : IDisposable
 
 1. **Search existing issues** - Your bug might already be reported
 2. **Update to latest** - Ensure you're on the latest version
-3. **Verify on hardware** - Test on actual Explorer HAT if possible
+3. **Verify on hardware** - Test on the relevant Raspberry Pi hardware if possible
 
 ### Bug Report Template
 
@@ -164,7 +164,7 @@ Clear description of the bug
 
 **To Reproduce**
 Steps to reproduce:
-1. Initialize ExplorerHat
+1. Initialize the relevant hardware component
 2. Call method X
 3. Observe error Y
 
@@ -179,7 +179,7 @@ What actually happens
 - .NET Version: 
 - Raspberry Pi Model: 
 - OS Version: 
-- Explorer HAT Version: 
+- Motor HAT / sensor model:
 
 **Code Sample**
 \`\`\`csharp
@@ -283,11 +283,11 @@ When adding new functionality:
 
 ### Adding to Existing Package
 
-If your feature fits an existing package (Motor, LED, Analog, Digital, Touch):
+If your feature fits an existing hardware package:
 
 ```
-Tobot.Device/ExplorerHat/
-??? [Package]/
+Tobot.Device/[Package]/
+    [Package]/
     ??? YourNewClass.cs
     ??? YourNewCollection.cs  (if needed)
 ```
@@ -297,22 +297,22 @@ Tobot.Device/ExplorerHat/
 For significant new functionality:
 
 ```
-Tobot.Device/ExplorerHat/
-??? NewFeature/
+Tobot.Device/NewFeature/
+    NewFeature/
     ??? NewFeature.cs
     ??? NewFeatureCollection.cs
     ??? NewFeatureConfig.cs  (if needed)
 ```
 
-Update `ExplorerHat.cs` to integrate:
+Add appropriate initialization to the relevant controller:
 ```csharp
-using Tobot.Device.ExplorerHat.NewFeature;
+using Tobot.Device.NewFeature;
 
-public class ExplorerHat
+public class NewFeatureController
 {
     public NewFeatureCollection NewFeature { get; }
     
-    public ExplorerHat()
+    public NewFeatureController()
     {
         // Initialize new feature
         NewFeature = new NewFeatureCollection(...);
@@ -343,13 +343,13 @@ We're building a comprehensive test suite. When it's ready:
 When adding features, update:
 - Main [README.md](README.md) - Add to features list
 - [Tobot/README.md](Tobot/README.md) - Add usage examples
-- [Tobot.Device/ExplorerHat/README.md](Tobot.Device/ExplorerHat/README.md) - API reference
+- The relevant hardware package README - API reference
 
 ### Examples
 
 Add examples to:
 - `Tobot/Program.cs` - Interactive demos
-- `Tobot.Device/ExplorerHat/ExplorerHatExample.cs` - Code samples
+- The relevant hardware package - Code samples
 - Documentation files - Usage scenarios
 
 ## 🏗️ Architecture Decisions

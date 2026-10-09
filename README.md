@@ -21,7 +21,7 @@
 
 ## ? What is Tobot?
 
-**Tobot** is a complete .NET robotics platform combining custom 3D-printed hardware with professional-grade software to create a powerful, extensible robot built for the future. The current robot is based on a **Pimoroni Explorer HAT Pro**, with a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers.
+**Tobot** is a .NET robotics playground for Raspberry Pi, with a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers. Current hardware code focuses on HC-SR04 distance sensing and a separate PCA9685 Motor HAT driver.
 
 > **Tobot v4 direction:** The next major version will favor standard, widely
 > supported controls and components (such as standard servos and motor
@@ -31,7 +31,7 @@
 
 At its core, Tobot is designed to run on **two Raspberry Pi boards** working in tandem—providing ample compute power for computer vision, machine learning, autonomous navigation, and real-time control. One Pi handles hardware interfacing and motor control, while the second can focus on AI workloads, web services, or video processing.
 
-The software stack centers around the `TobotController`, a unified C# API that orchestrates every sensor, motor, LED, and servo. Whether you're building your first robot, teaching programming, experimenting with edge AI, or creating a sophisticated autonomous system, Tobot provides everything you need in a clean, scalable, and well-documented platform.
+The software stack includes a `TobotController` for HC-SR04 distance sensing, a standalone PCA9685 Motor HAT driver, and a Blazor web interface for sensor and Pi status.
 
 ### ✨ Why Tobot?
 
@@ -39,7 +39,7 @@ The software stack centers around the `TobotController`, a unified C# API that o
 - **📦 Package-Based Architecture** - Logical organization by functionality
 - **📚 Comprehensive Documentation** - XML docs on every member, extensive guides
 - **⌨️ Command-Line Interface** - An interactive starting point for the next ToBot
-- **🔌 Unified Controller** - One `TobotController` surfaces every LED, motor, sensor, and servo
+- **🔌 Hardware APIs** - Focused APIs for distance sensing and PCA9685 motor control
 - **✅ Production Ready** - Robust error handling and resource management
 - **🎓 Educational** - Perfect for learning robotics and C# together
 
@@ -108,7 +108,7 @@ Tobot's hardware foundation is built on exceptional components from the amazing 
 
 | Component                                                                                                                            | Description                                                           | Shop Link                                                                                                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **[Explorer HAT Pro](https://shop.pimoroni.com/products/explorer-hat)**                                                              | Motor drivers, LEDs, analog inputs, digital I/O, and capacitive touch | [Buy Now](https://shop.pimoroni.com/products/explorer-hat)                                                                |
+| **[Adafruit Motor HAT](https://www.adafruit.com/product/2348)**                                                                      | PCA9685-based DC and stepper motor control                            | [Product](https://www.adafruit.com/product/2348)                                                                            |
 | **[pHAT Stack HAT](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC)** | Stacking connector for adding multiple HATs                           | [Buy Now](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC) |
 | **[Blinkt!](https://shop.pimoroni.com/products/blinkt)**                                                                             | 8 RGB LED strip for visual feedback                                   | [Buy Now](https://shop.pimoroni.com/products/blinkt)                                                                      |
 
@@ -166,30 +166,12 @@ No custom kernel modules, no modified OS images - just standard Raspberry Pi OS 
 ```csharp
 using Tobot.Device;
 
-// Initialize the unified controller (all hats + sensors)
+// Initialize the distance sensor controller
 using var controller = new TobotController();
 
-// Light show!
-controller.SetAllLeds(true);
-
-// Drive forward
-controller.DriveMotors(100, 100);
-
-// React to sensors
-if (controller.ReadDigitalInput(1))
+if (controller.TryReadDistance(out double distanceCm))
 {
-    controller.StopMotors();
-    controller.SetAllLeds(false);
-}
-
-// Read analog sensors
-double voltage = controller.ReadAnalogValue(1);
-Console.WriteLine($"Sensor: {voltage:F2}V");
-
-// Touch detection
-if (controller.ReadTouchSensor(1))
-{
-    Console.WriteLine("Button pressed!");
+    Console.WriteLine($"Distance: {distanceCm:F1} cm");
 }
 ```
 
@@ -199,16 +181,12 @@ if (controller.ReadTouchSensor(1))
 
 ### 📦 Tobot.Device Library
 
-A professional-grade driver library for the Explorer HAT with:
+A hardware library with:
 
-| Package        | Components                             | Description                                |
-| -------------- | -------------------------------------- | ------------------------------------------ |
-| **🚗 Motor**    | `Motor`, `MotorCollection`             | H-bridge motor control with variable speed |
-| **💡 LED**      | `Led`, `LedCollection`                 | Onboard LED control and patterns           |
-| **📊 Analog**   | `AnalogInput`, `AnalogInputCollection` | 0-5V analog input via ADS1015 ADC          |
-| **🔌 Digital**  | `DigitalInput/Output`, Collections     | Digital I/O with event support             |
-| **👆 Touch**    | `TouchSensor`, `TouchCollection`       | Capacitive touch via CAP1208               |
-| **📐 Distance** | `HcSr04Sensor`                         | Ultrasonic range finding with averaging    |
+| Package | Components | Description |
+| --- | --- | --- |
+| **📐 Distance** | `HcSr04Sensor`, `TobotController` | HC-SR04 distance readings and monitoring |
+| **🚗 Motor HAT** | `MotorKit`, `DCMotor`, `StepperMotor` | PCA9685-based motor control |
 
 #### 📐 HC-SR04 Ultrasonic Distance
 
@@ -230,54 +208,16 @@ The previous Explorer HAT demo is available in the [v2 release](https://github.c
 A modern web-based control interface featuring:
 
 - **SignalR Integration** - Real-time bidirectional communication
-- **Remote Control** - Control your robot from any device on the network
-- **Live Updates** - Receive real-time feedback from all sensors and actuators
+- **Live Updates** - Receive real-time distance and Pi status updates
 - **Interactive UI** - Clean, responsive Blazor interface
-- **Event Monitoring** - Track all robot actions in real-time
 - **Multi-Device Support** - Access from phones, tablets, or computers
-- **URL-Triggered Actions** - Trigger robot commands via query parameters
 
 #### Available Pages
-
-**Simple Control** (`/simple`)
-- Styled button interface for motors, LEDs, and digital outputs
-- Real-time event log showing all hub activity
-- Speed control sliders for motors
-- Connection status indicator
-
-**Remote Control** (`/remote`)
-- Minimal, unstyled button interface
-- Supports query parameter `action` for URL-triggered commands
-- Ideal for embedded frames or remote triggers
 
 **Bot** (`/bot`)
 - Animated reactive eyes with mood states
 - Distance sensor visualization
-- Click-to-toggle random autonomous driving
 - Responsive mood changes based on sensor data
-
-#### Remote Control Query Parameters
-
-The `/remote` page supports triggering actions via URL query parameter `action`:
-
-```
-http://[raspberry-pi-ip]:5247/remote?action=forward
-http://[raspberry-pi-ip]:5247/remote?action=backward
-http://[raspberry-pi-ip]:5247/remote?action=stop
-http://[raspberry-pi-ip]:5247/remote?action=left
-http://[raspberry-pi-ip]:5247/remote?action=right
-http://[raspberry-pi-ip]:5247/remote?action=light-on
-http://[raspberry-pi-ip]:5247/remote?action=light-off
-```
-
-Supported action values:
-- **Movement**: `forward`, `backward`, `stop`, `left`, `right`
-- **Lights**: `light-on` (or `lighton`), `light-off` (or `lightoff`)
-
-Use cases:
-- Trigger actions from external scripts or dashboards
-- Create custom control buttons/links
-- Automate robot behavior via HTTP requests
 
 ### 🖥️ MAUI GTK Example
 
@@ -289,7 +229,7 @@ A wireless remote control firmware for the **Raspberry Pi Pico W** with **Pimoro
 
 Features:
 - **16-Key RGB Keypad** - Intuitive button layout with visual LED feedback
-- **WiFi Connectivity** - Sends HTTP GET requests to Tobot.Web's `/remote` endpoint
+- **WiFi Connectivity** - Legacy firmware; its expected `/remote` endpoint is not available in the current web app
 - **Status Indicators** - Real-time LED display of boot, WiFi, and remote endpoint status
 - **Controller Layout**:
   - Directional controls: Up (forward), Down (backward), Left, Right
@@ -357,7 +297,7 @@ PiSystemInfo.StartTemperaturePublishing();
 ### Prerequisites
 
 - Raspberry Pi (any model with 40-pin GPIO)
-- Pimoroni Explorer HAT
+- PCA9685 Motor HAT (optional, for motor control)
 - HC-SR04 ultrasonic sensor
 - .NET 10 SDK
 
@@ -427,13 +367,6 @@ Tobot/
 │   └── README.md                      CLI usage
 │
 ├── Tobot.Device/                      Hardware driver library
-│   ├── ExplorerHat/                   Explorer HAT components
-│   │   ├── ExplorerHat.cs             Main controller
-│   │   ├── Motor/                     Motor control package
-│   │   ├── Led/                       LED control package
-│   │   ├── Analog/                    Analog input package
-│   │   ├── Digital/                   Digital I/O package
-│   │   └── Touch/                     Touch sensor package
 │   ├── MotorHat/                      Adafruit PCA9685 Motor HAT driver
 │   │   ├── MotorKit.cs                Motor and stepper controller
 │   │   ├── Motor/                     DC and stepper motor controls
@@ -473,18 +406,9 @@ Tobot/
 
 ## 🎯 Features & Capabilities
 
-All snippets below assume you have already created `var controller = new TobotController();` (or are inside a scope where a controller instance is available).
+### 🚗 PCA9685 Motor HAT
 
-### 🚗 Motor Control
-```csharp
-controller.DriveMotor(1, 100);   // Full speed ahead
-controller.DriveMotor(1, 75);    // 75% forward
-controller.DriveMotor(1, -50);   // 50% backward
-controller.StopMotors();         // Emergency stop
-```
-
-For a separate **Adafruit PCA9685 Motor HAT**, use the `MotorKit` driver rather
-than `TobotController`:
+The standalone `MotorKit` driver controls a compatible PCA9685 Motor HAT:
 
 ```csharp
 using Tobot.Device.MotorHat;
@@ -497,44 +421,6 @@ kit.Motor1.Stop();
 
 See the [MotorKit setup guide and DC/stepper examples](Tobot.Device/MotorHat/README.md)
 for hardware setup, configuration, safe cleanup, and shared-channel details.
-
-### 💡 LED Control
-```csharp
-controller.SetLedState(1, true); // Individual LED
-controller.SetAllLeds(true);     // All LEDs
-controller.ToggleLed(2);         // Toggle state
-```
-
-### 🔌 Digital I/O
-```csharp
-// Read input
-bool state = controller.ReadDigitalInput(1);
-
-// Event-driven
-controller.RegisterInputChangedHandler(1, (s, e) =>
-	Console.WriteLine($"Changed: {e.ChangeType}")
-);
-
-// Control output
-controller.SetDigitalOutput(1, true);
-controller.ToggleDigitalOutput(1);
-```
-
-### 📊 Analog Input (0-5V)
-```csharp
-double voltage = controller.ReadAnalogValue(1);
-Console.WriteLine($"Voltage: {voltage:F2}V");
-```
-
-### 👆 Capacitive Touch
-```csharp
-if (controller.ReadTouchSensor(1))
-{
-	Console.WriteLine("Touched!");
-}
-
-byte allSensors = controller.ReadTouchState();
-```
 
 ### 📐 Ultrasonic Distance (HC-SR04)
 
@@ -557,44 +443,11 @@ else
 | Document                                                                                             | Description            |
 | ---------------------------------------------------------------------------------------------------- | ---------------------- |
 | [Tobot/README.md](Tobot/README.md)                                                                   | CLI overview           |
-| [Tobot.Device/ExplorerHat/README.md](Tobot.Device/ExplorerHat/README.md)                             | API reference          |
-| [Tobot.Device/ExplorerHat/FILE_STRUCTURE.md](Tobot.Device/ExplorerHat/FILE_STRUCTURE.md)             | File organization      |
-| [Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md](Tobot.Device/ExplorerHat/PACKAGE_ORGANIZATION.md) | Package guide          |
+| [Tobot.Device/MotorHat/README.md](Tobot.Device/MotorHat/README.md) | Motor HAT setup and API reference |
 
 ---
 
 ## 📖 Learning Resources
-
-### Example Projects
-
-1. **Line Following Robot**
-   ```csharp
-   // Use analog sensors to detect line
-   double left = controller.ReadAnalogValue(1);
-   double right = controller.ReadAnalogValue(2);
-   
-   if (left > 2.5) controller.DriveMotor(1, 50);
-   if (right > 2.5) controller.DriveMotor(2, 50);
-   ```
-
-2. **Touch-Controlled Light Show**
-   ```csharp
-   for (int i = 1; i <= 4; i++)
-   {
-       if (controller.ReadTouchSensor(i))
-           controller.ToggleLed(i);
-   }
-   ```
-
-3. **Obstacle Avoiding Robot**
-   ```csharp
-   double distance = controller.ReadAnalogValue(1);
-   if (distance > 3.0)
-   {
-       controller.StopMotors();
-       controller.SetAllLeds(true); // Warning!
-   }
-   ```
 
 ### Code Examples
 
@@ -604,93 +457,20 @@ The previous Explorer HAT demo application is available in the [v2 release](http
 
 ## 🔧 Hardware Specifications
 
-### Explorer HAT Features
-
-| Feature             | Quantity | Specifications             |
-| ------------------- | -------- | -------------------------- |
-| **Digital Inputs**  | 4        | 5V tolerant, buffered      |
-| **Digital Outputs** | 4        | 500mA sink-to-ground       |
-| **Analog Inputs**   | 4        | 0-5V, 12-bit ADC (ADS1015) |
-| **Motor Drivers**   | 2        | H-bridge, PWM capable      |
-| **Onboard LEDs**    | 4        | Status indicators          |
-| **Touch Sensors**   | 8        | Capacitive (CAP1208)       |
-
-### Pin Mapping
-
-<details>
-<summary>🔍 Click to view complete pin mapping</summary>
-
-#### Digital Inputs (BCM GPIO)
-- Input 1: GPIO 23
-- Input 2: GPIO 22
-- Input 3: GPIO 24
-- Input 4: GPIO 25
-
-#### Digital Outputs (BCM GPIO)
-- Output 1: GPIO 6
-- Output 2: GPIO 12
-- Output 3: GPIO 13
-- Output 4: GPIO 16
-
-#### LEDs (BCM GPIO)
-- LED 1: GPIO 4
-- LED 2: GPIO 17
-- LED 3: GPIO 27
-- LED 4: GPIO 5
-
-#### Motors (BCM GPIO)
-- Motor 1: Enable 19, Forward 20, Backward 21
-- Motor 2: Enable 26, Forward 7, Backward 8
-
-#### I2C Devices
-- ADS1015 ADC: Address 0x48
-- CAP1208 Touch: Address 0x28
-
-</details>
-
----
+For PCA9685 Motor HAT wiring, configuration, and pin details, see the
+[MotorKit guide](Tobot.Device/MotorHat/README.md).
 
 ## ⚙️ Advanced Usage
 
-### Custom Robot Control Loop
+### Distance Monitoring
 
 ```csharp
 using var controller = new TobotController();
 
-// Setup
-controller.SetAllLeds(false);
-controller.StopMotors();
-
-// Main control loop
-while (true)
+using var subscription = controller.ObserveDistance().Subscribe(distanceCm =>
 {
-    // Read sensors
-    bool goButton = controller.ReadDigitalInput(1);
-    bool stopButton = controller.ReadDigitalInput(2);
-    double frontSensor = controller.ReadAnalogValue(1);
-	
-    // Decision logic
-    if (stopButton || frontSensor > 3.0)
-    {
-        // Emergency stop
-        controller.StopMotors();
-        controller.SetLedState(1, true);
-    }
-    else if (goButton)
-    {
-        // Move forward
-        controller.DriveMotors(80, 80);
-        controller.SetLedState(2, true);
-    }
-    else
-    {
-        // Idle
-        controller.StopMotors();
-        controller.SetAllLeds(false);
-    }
-	
-    await Task.Delay(50); // 20Hz update rate
-}
+    Console.WriteLine($"Distance changed: {distanceCm:F1} cm");
+});
 ```
 
 ### Async/Await Support
@@ -702,8 +482,10 @@ public async Task MonitorSensorsAsync(CancellationToken ct)
 	
     while (!ct.IsCancellationRequested)
     {
-        var voltage = controller.ReadAnalogValue(1);
-        Console.WriteLine($"Sensor: {voltage:F2}V");
+        if (controller.TryReadDistance(out double distanceCm))
+        {
+            Console.WriteLine($"Distance: {distanceCm:F1} cm");
+        }
 		
         await Task.Delay(100, ct);
     }
@@ -750,7 +532,8 @@ The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml
 ## 🗺️ Roadmap
 
 ### Current Features
-- Complete Explorer HAT driver
+- HC-SR04 distance sensing
+- PCA9685 Motor HAT driver
 - Interactive CLI starting point
 - Comprehensive documentation
 - Package-based architecture
@@ -788,7 +571,7 @@ The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml
 
 ## 🙏 Acknowledgments
 
-- **Pimoroni** - For creating the amazing Explorer HAT hardware
+- **Adafruit** - For the PCA9685 Motor HAT hardware
 - **.NET Team** - For bringing .NET to ARM/IoT devices
 - **Open Source Community** - For inspiration and support
 
@@ -802,7 +585,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ## 🔗 Links
 
-- **Hardware**: [Pimoroni Explorer HAT](https://shop.pimoroni.com/products/explorer-hat)
+- **Hardware**: [Adafruit Motor HAT](https://www.adafruit.com/product/2348)
 - **Documentation**: [.NET IoT Libraries](https://github.com/dotnet/iot)
 - **Community**: [Raspberry Pi Forums](https://forums.raspberrypi.com/)
 - **Support**: [Open an Issue](https://github.com/yourusername/tobot/issues)
