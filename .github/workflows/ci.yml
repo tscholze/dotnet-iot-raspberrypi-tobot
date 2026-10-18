@@ -42,4 +42,4 @@ jobs:
 
       # The solution excludes the MAUI project from its build, so build it explicitly.
       - name: Build MAUI (Android)
-        run: dotnet build src/Tobot.Maui -f net10.0-android --configuration Release
+        run: dotnet build src/Tobot.Maui -f net10.0-android -r android-arm64 --configuration Release
