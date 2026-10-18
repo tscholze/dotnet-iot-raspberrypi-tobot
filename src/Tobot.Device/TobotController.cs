@@ -3,12 +3,13 @@ using System.Device.Gpio;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Tobot.Device.HcSr04;
+using Tobot.Device.MotorHat;
 
 namespace Tobot.Device;
 
 /// <summary>
-/// Central orchestrator for the HC-SR04 distance sensor.
-/// Provides shared GPIO access and a reactive distance observable.
+/// Central orchestrator for the HC-SR04 distance sensor and the two-motor drive train.
+/// Provides shared GPIO access, a reactive distance observable and differential driving.
 /// </summary>
 public sealed class TobotController : IDisposable
 {
@@ -38,6 +39,16 @@ public sealed class TobotController : IDisposable
 	/// Last measured distance value for change detection.
 	/// </summary>
 	private double? _lastDistance;
+
+	/// <summary>
+	/// Motor HAT driver (created on first drive command).
+	/// </summary>
+	private MotorKit? _motorKit;
+
+	/// <summary>
+	/// Serializes access to <see cref="_motorKit"/>.
+	/// </summary>
+	private readonly object _motorLock = new();
 
 	/// <summary>
 	/// Tracks whether the controller has been disposed.
@@ -157,6 +168,69 @@ public sealed class TobotController : IDisposable
 
 	#endregion
 
+	#region Drive
+
+	/// <summary>
+	/// Sets the speed of the left (Motor 1) and right (Motor 2) DC motor.
+	/// </summary>
+	/// <param name="left">Left speed in percent, -100..100.</param>
+	/// <param name="right">Right speed in percent, -100..100.</param>
+	/// <exception cref="ArgumentOutOfRangeException">A speed is outside -100..100 or not finite.</exception>
+	public void Drive(double left, double right)
+	{
+		EnsureNotDisposed();
+		ValidateSpeed(left, nameof(left));
+		ValidateSpeed(right, nameof(right));
+
+		lock (_motorLock)
+		{
+			_motorKit ??= new MotorKit();
+			_motorKit.Motor1.Throttle = left / 100.0;
+			_motorKit.Motor2.Throttle = right / 100.0;
+		}
+	}
+
+	/// <summary>
+	/// Releases both motors (coasting stop). Does nothing when no motor was ever used.
+	/// </summary>
+	public void Stop()
+	{
+		EnsureNotDisposed();
+		StopMotors();
+	}
+
+	/// <summary>
+	/// Turns both motor drivers off if the Motor HAT was initialized.
+	/// </summary>
+	private void StopMotors()
+	{
+		lock (_motorLock)
+		{
+			if (_motorKit is null)
+			{
+				return;
+			}
+
+			_motorKit.Motor1.Throttle = null;
+			_motorKit.Motor2.Throttle = null;
+		}
+	}
+
+	/// <summary>
+	/// Validates a speed in percent.
+	/// </summary>
+	/// <param name="speed">Speed value.</param>
+	/// <param name="name">Parameter name for the exception.</param>
+	private static void ValidateSpeed(double speed, string name)
+	{
+		if (!double.IsFinite(speed) || speed is < -100 or > 100)
+		{
+			throw new ArgumentOutOfRangeException(name, speed, "Speed must be between -100 and 100.");
+		}
+	}
+
+	#endregion
+
 	#region Disposal
 
 	/// <summary>
@@ -173,6 +247,8 @@ public sealed class TobotController : IDisposable
 		_distanceSubject.OnCompleted();
 		_distanceSubject.Dispose();
 		_distanceSensor?.Dispose();
+		StopMotors();
+		_motorKit?.Dispose();
 		if (_gpioController.IsValueCreated)
 		{
 			_gpioController.Value.Dispose();

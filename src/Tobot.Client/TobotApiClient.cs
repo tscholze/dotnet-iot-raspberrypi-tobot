@@ -17,6 +17,11 @@ public sealed class TobotApiClient : ITobotApi, IDisposable
 	/// </summary>
 	private readonly HttpClient _http;
 
+	/// <summary>
+	/// Whether this instance owns <see cref="_http"/> and must dispose it.
+	/// </summary>
+	private readonly bool _ownsHttp;
+
 	#endregion
 
 	#region Construction
@@ -28,6 +33,16 @@ public sealed class TobotApiClient : ITobotApi, IDisposable
 	public TobotApiClient(Uri baseAddress)
 	{
 		_http = new HttpClient { BaseAddress = baseAddress, Timeout = TimeSpan.FromSeconds(10) };
+		_ownsHttp = true;
+	}
+
+	/// <summary>
+	/// Initializes a new instance using an externally managed <see cref="HttpClient"/> (e.g. from DI or tests).
+	/// </summary>
+	/// <param name="httpClient">A client with <see cref="HttpClient.BaseAddress"/> set.</param>
+	public TobotApiClient(HttpClient httpClient)
+	{
+		_http = httpClient;
 	}
 
 	#endregion
@@ -53,12 +68,32 @@ public sealed class TobotApiClient : ITobotApi, IDisposable
 	public Task<PiStatusSummary?> GetStatusAsync(CancellationToken cancellationToken = default) =>
 		_http.GetFromJsonAsync<PiStatusSummary>(TobotRoutes.Status, cancellationToken);
 
+	/// <inheritdoc />
+	public async Task<bool> DriveAsync(DriveCommand command, CancellationToken cancellationToken = default)
+	{
+		using var response = await _http.PostAsJsonAsync(TobotRoutes.Drive, command, cancellationToken).ConfigureAwait(false);
+		return response.IsSuccessStatusCode;
+	}
+
+	/// <inheritdoc />
+	public async Task<bool> StopAsync(CancellationToken cancellationToken = default)
+	{
+		using var response = await _http.PostAsync(TobotRoutes.DriveStop, null, cancellationToken).ConfigureAwait(false);
+		return response.IsSuccessStatusCode;
+	}
+
 	#endregion
 
 	#region IDisposable
 
 	/// <inheritdoc />
-	public void Dispose() => _http.Dispose();
+	public void Dispose()
+	{
+		if (_ownsHttp)
+		{
+			_http.Dispose();
+		}
+	}
 
 	#endregion
 }

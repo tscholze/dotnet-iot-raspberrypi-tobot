@@ -21,4 +21,19 @@ public interface ITobotApi
 	/// <param name="cancellationToken">Token to cancel the request.</param>
 	/// <returns>The status summary.</returns>
 	Task<PiStatusSummary?> GetStatusAsync(CancellationToken cancellationToken = default);
+
+	/// <summary>
+	/// Sets the speed of both motors.
+	/// </summary>
+	/// <param name="command">The drive command.</param>
+	/// <param name="cancellationToken">Token to cancel the request.</param>
+	/// <returns><c>true</c> when the host accepted the command.</returns>
+	Task<bool> DriveAsync(DriveCommand command, CancellationToken cancellationToken = default);
+
+	/// <summary>
+	/// Stops both motors.
+	/// </summary>
+	/// <param name="cancellationToken">Token to cancel the request.</param>
+	/// <returns><c>true</c> when the host accepted the command.</returns>
+	Task<bool> StopAsync(CancellationToken cancellationToken = default);
 }

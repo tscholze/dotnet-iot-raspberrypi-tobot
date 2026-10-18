@@ -12,7 +12,8 @@ Guidance for AI coding agents working on Tobot, a personal .NET 10 / C# robotics
 | `src/Tobot.Client` | any | `TobotApiClient` (REST) and `TobotTelemetryClient` (SignalR) used by CLI and MAUI. |
 | `src/Tobot.Cli` | Pi / dev | Console client (`dotnet run --project src/Tobot.Cli distance`). |
 | `src/Tobot.Maui` | phone/desktop | MAUI client (Android on any OS, Mac Catalyst only on macOS); needs the MAUI workload, excluded from the default solution build. |
-| `firmware/Tobot.PicoRemote` | Pico W | MicroPython remote, listed in the solution as files only (`secret.py` holds Wi-Fi config, never commit real secrets). |
+| `tests/Tobot.Tests` | any | xUnit v3 tests for Shared/Client (no hardware). |
+| `firmware/Tobot.PicoRemote` | Pico W | MicroPython remote, listed in the solution as files only. Copy `secret.example.py` to the untracked `secret.py` for Wi-Fi config; never commit real secrets. |
 | `scripts/` | Pi | Autostart and kiosk shell scripts. |
 
 Dependencies: `Host` -> `Device`, `Shared`; `Cli`/`Maui` -> `Client` -> `Shared`. Keep hardware code in `Tobot.Device` only; clients must never reference it. Commands/queries are REST endpoints (routes in `TobotRoutes`); SignalR is only for server-to-client pushes. The API has no authentication yet (Microsoft Account SSO planned).
@@ -20,15 +21,16 @@ Dependencies: `Host` -> `Device`, `Shared`; `Cli`/`Maui` -> `Client` -> `Shared`
 ## Build and verify
 
 - SDK pinned in `global.json` (10.0.x). Target `net10.0`, `Nullable` enabled.
-- `dotnet restore Tobot.slnx && dotnet build Tobot.slnx -c Release` (this is exactly what CI runs).
-- There are no unit tests. GPIO/I2C code only works on a Pi, so on a dev machine, verify by building only; do not try to run hardware paths.
+- `dotnet restore Tobot.slnx && dotnet build Tobot.slnx -c Release` then `dotnet test --solution Tobot.slnx --no-build -c Release` (this is what CI runs, plus an Android MAUI build). Tests use Microsoft.Testing.Platform, enabled in `global.json`.
+- Unit tests cover Shared and Client only. GPIO/I2C code only works on a Pi, so on a dev machine verify hardware code by building; do not try to run hardware paths.
 
 ## Coding conventions (follow the existing code)
 
 - XML doc comments (`///`) on every type and member, including private fields.
 - Use `#region` blocks to group members (e.g. `Private Fields`, `Motor Control`).
 - File-scoped namespaces; one type per file; folder = functional package.
-- Collections expose indexers (`explorerHat.Motor[1]`); motor speed range is -100..+100.
+- `MotorKit` exposes `Motor1`..`Motor4` (throttle -1..1); the API/`TobotController.Drive` use -100..+100 percent (Motor1 = left, Motor2 = right).
+- Host settings (camera URL, remote speed) live in `appsettings.json` under `Tobot`; do not hard-code hosts in pages.
 - Hardware is wrapped by `IDisposable` classes; dispose and stop motors on shutdown (see `ApplicationStopping` hook in `src/Tobot.Host/Program.cs`).
 - SignalR event names live in `TobotHubEvents` and routes in `TobotRoutes` (Shared); reuse them rather than string literals. Broadcast from services via `IHubContext<TelemetryHub>`.
 - Distance reads use `TryReadDistance` (returns false on failure) and Rx `ObserveDistance`.

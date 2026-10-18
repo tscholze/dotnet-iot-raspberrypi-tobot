@@ -1,4 +1,5 @@
 using Tobot.Client;
+using Tobot.Shared.Models;
 
 namespace Tobot.Cli;
 
@@ -54,13 +55,16 @@ internal static class Program
 	{
 		try
 		{
-			switch (command.Trim().ToLowerInvariant())
+			string[] parts = command.Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			switch (parts.FirstOrDefault() ?? string.Empty)
 			{
 				case "":
 					return true;
 				case "help":
 					Console.WriteLine("  distance  Read the distance once.");
 					Console.WriteLine("  status    Show Pi status.");
+					Console.WriteLine("  drive L R Set motor speeds in percent (-100..100), e.g. 'drive 50 50'.");
+					Console.WriteLine("  stop      Stop both motors.");
 					Console.WriteLine("  watch     Stream live distance (Ctrl+C to stop).");
 					Console.WriteLine("  exit      Leave the shell.");
 					return true;
@@ -71,6 +75,22 @@ internal static class Program
 				case "status":
 					Console.WriteLine(await api.GetStatusAsync());
 					return true;
+				case "drive":
+					if (parts.Length != 3
+						|| !double.TryParse(parts[1], System.Globalization.CultureInfo.InvariantCulture, out double left)
+						|| !double.TryParse(parts[2], System.Globalization.CultureInfo.InvariantCulture, out double right))
+					{
+						Console.WriteLine("Usage: drive <left> <right>");
+						return false;
+					}
+
+					bool driven = await api.DriveAsync(new DriveCommand(left, right));
+					Console.WriteLine(driven ? "OK" : "Rejected or motors unavailable.");
+					return driven;
+				case "stop":
+					bool stopped = await api.StopAsync();
+					Console.WriteLine(stopped ? "OK" : "Motors unavailable.");
+					return stopped;
 				case "watch":
 					await WatchAsync(baseAddress);
 					return true;

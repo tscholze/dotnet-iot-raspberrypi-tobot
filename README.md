@@ -212,7 +212,7 @@ The previous Explorer HAT demo is available in the [v2 release](https://github.c
 
 A modern web-based control interface featuring:
 
-- **REST API** - `GET /api/distance`, `GET /api/status` (no authentication yet; Microsoft Account SSO is planned)
+- **REST API** - `GET /api/distance`, `GET /api/status`, `POST /api/drive` (`{"left":50,"right":50}`, -100..100), `POST /api/drive/stop`, `GET /remote?action=` for firmware remotes (no authentication yet; Microsoft Account SSO is planned). Camera URL and remote speed are configured under `Tobot` in `appsettings.json`
 - **SignalR Telemetry** - Server-to-client push on `/hubs/telemetry`
 - **Live Updates** - Receive real-time distance and Pi status updates
 - **Interactive UI** - Clean, responsive Blazor interface
@@ -235,7 +235,7 @@ A wireless remote control firmware for the **Raspberry Pi Pico W** with **Pimoro
 
 Features:
 - **16-Key RGB Keypad** - Intuitive button layout with visual LED feedback
-- **WiFi Connectivity** - Legacy firmware; its expected `/remote` endpoint is not available in the current web app
+- **WiFi Connectivity** - Calls `GET /remote?action=forward|backwards|left|right|stop|ping` on `Tobot.Host` (speed: `Tobot:RemoteSpeed` in `appsettings.json`); copy `secret.example.py` to `secret.py` and fill in your Wi-Fi credentials
 - **Status Indicators** - Real-time LED display of boot, WiFi, and remote endpoint status
 - **Controller Layout**:
   - Directional controls: Up (forward), Down (backward), Left, Right
@@ -314,8 +314,9 @@ PiSystemInfo.StartTemperaturePublishing();
 git clone https://github.com/yourusername/tobot.git
 cd tobot
 
-# Build the solution
+# Build the solution and run the tests
 dotnet build
+dotnet test --solution Tobot.slnx
 
 # Run the host (on the Pi), then the CLI (anywhere)
 dotnet run --project src/Tobot.Host
@@ -376,6 +377,7 @@ Tobot/
 │   ├── Tobot.Client/      Typed REST + SignalR client (CLI, MAUI)
 │   ├── Tobot.Cli/         Console client (`tobot`)
 │   └── Tobot.Maui/        Cross-platform client (Android + Mac Catalyst on macOS; needs MAUI workload; excluded from default build)
+├── tests/Tobot.Tests/     Hardware-free unit tests (xUnit v3, Microsoft.Testing.Platform)
 ├── firmware/
 │   └── Tobot.PicoRemote/  Pico W MicroPython remote (listed in the solution, not compiled)
 └── scripts/               Pi autostart and kiosk scripts

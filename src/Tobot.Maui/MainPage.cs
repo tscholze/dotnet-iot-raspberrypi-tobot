@@ -10,9 +10,9 @@ public sealed class MainPage : ContentPage
 	#region Private Fields
 
 	/// <summary>
-	/// Host address; replace with a settings page later (e.g. http://pi41:5247).
+	/// Host address read from the <c>HostAddress</c> preference (default http://pi41:5247); a settings page can write it later.
 	/// </summary>
-	private static readonly Uri HostAddress = new("http://pi41:5247");
+	private static readonly Uri HostAddress = new(Preferences.Get("HostAddress", "http://pi41:5247"));
 
 	/// <summary>
 	/// Label showing the latest distance.

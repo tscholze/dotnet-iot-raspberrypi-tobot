@@ -4,23 +4,23 @@ Tobot Remote Control - Raspberry Pi Pico W Keypad Controller
 Description:
     A firmware application for the Raspberry Pi Pico W with Pimoroni PicoKeypad that acts as
     a wireless remote control for the Tobot robot. Uses WiFi to send HTTP GET requests to the
-    Tobot.Web application's /remote endpoint with action query parameters.
+    Tobot.Host application's /remote endpoint with action query parameters.
 
 Functionality:
     - 16-key keypad control with visual LED feedback
     - WiFi connectivity status indicators (boot, WiFi, remote endpoint)
     - Controller layout: directional arrows (up/down/left/right), center stop button
     - Special function keys: Light On, Light Off, and additional controls
-    - Real-time HTTP communication with Tobot.Web remote control page
+    - Real-time HTTP communication with Tobot.Host /remote endpoint
     - Status LEDs show connection state and system health
 
 Requirements:
     - Raspberry Pi Pico W (WiFi capable)
     - Pimoroni PicoKeypad (16 RGB backlit keys)
     - MicroPython with picokeypad library
-    - WiFi credentials in secret.py (SSID and PASSWORD variables)
-    - Network access to Tobot.Web application at configured host/port
-    - Tobot.Web running with /remote page accessible (default: pi41:5247/remote)
+    - WiFi credentials in secret.py (copy secret.example.py; SSID and PASSWORD variables)
+    - Network access to Tobot.Host application at configured host/port
+    - Tobot.Host running with the /remote endpoint accessible (default: pi41:5247/remote)
 
 Configuration:
     - WiFi credentials: Create secret.py with SSID and PASSWORD

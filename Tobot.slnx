@@ -10,9 +10,12 @@
       <Deploy Solution="*|*" Project="false" />
     </Project>
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tobot.Tests/Tobot.Tests.csproj" />
+  </Folder>
   <Folder Name="/firmware/Tobot.PicoRemote/">
     <File Path="firmware/Tobot.PicoRemote/remote-control.py" />
-    <File Path="firmware/Tobot.PicoRemote/secret.py" />
+    <File Path="firmware/Tobot.PicoRemote/secret.example.py" />
   </Folder>
   <Folder Name="/scripts/">
     <File Path="scripts/add-to-autostart.sh" />

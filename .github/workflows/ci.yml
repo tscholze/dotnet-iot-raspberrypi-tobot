@@ -37,6 +37,9 @@ jobs:
       - name: Build solution
         run: dotnet build Tobot.slnx --no-restore --configuration Release
 
+      - name: Test
+        run: dotnet test --solution Tobot.slnx --no-build --configuration Release
+
       # The solution excludes the MAUI project from its build, so build it explicitly.
       - name: Build MAUI (Android)
         run: dotnet build src/Tobot.Maui -f net10.0-android --configuration Release

@@ -20,4 +20,20 @@ public static class TobotRoutes
 	/// Route returning the current <see cref="Models.PiStatusSummary"/>.
 	/// </summary>
 	public const string Status = "/api/status";
+
+	/// <summary>
+	/// Route accepting a <see cref="Models.DriveCommand"/> via POST.
+	/// </summary>
+	public const string Drive = "/api/drive";
+
+	/// <summary>
+	/// Route that stops both motors via POST.
+	/// </summary>
+	public const string DriveStop = "/api/drive/stop";
+
+	/// <summary>
+	/// Simple GET route for firmware remotes, e.g. <c>/remote?action=forward</c>.
+	/// Actions: ping, forward, backwards, left, right, stop (light-on/light-off are accepted and ignored).
+	/// </summary>
+	public const string Remote = "/remote";
 }

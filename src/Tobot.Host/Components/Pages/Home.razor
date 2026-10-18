@@ -4,12 +4,13 @@
 @using Tobot.Shared.Models
 @implements IAsyncDisposable
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 
 <div class="page-shell">
 	<div class="video-card">
 		<div class="video-header">Live View</div>
 		<div class="video-frame">
-			<iframe src="http://pi41:8889/cam/" allow="camera; microphone; autoplay" title="Tobot camera feed"></iframe>
+			<iframe src="@Configuration["Tobot:CameraUrl"]" allow="camera; microphone; autoplay" title="Tobot camera feed"></iframe>
 		</div>
 	</div>
 
