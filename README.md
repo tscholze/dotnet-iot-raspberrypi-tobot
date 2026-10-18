@@ -375,7 +375,7 @@ Tobot/
 │   ├── Tobot.Host/        Pi only: REST endpoints, SignalR TelemetryHub, background broadcasters, Blazor UI
 │   ├── Tobot.Client/      Typed REST + SignalR client (CLI, MAUI)
 │   ├── Tobot.Cli/         Console client (`tobot`)
-│   └── Tobot.Maui/        Cross-platform client (needs MAUI workload; excluded from default build)
+│   └── Tobot.Maui/        Cross-platform client (Android + Mac Catalyst on macOS; needs MAUI workload; excluded from default build)
 ├── firmware/
 │   └── Tobot.PicoRemote/  Pico W MicroPython remote (listed in the solution, not compiled)
 └── scripts/               Pi autostart and kiosk scripts

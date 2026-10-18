@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Restore & Build (Shared, Device, Host, Client, CLI)
+    name: Restore & Build (all projects incl. MAUI Android)
     runs-on: ubuntu-latest
 
     steps:
@@ -27,28 +27,16 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Android-only MAUI builds on Linux; the runner already ships a JDK and the Android SDK.
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
       - name: Restore
         run: dotnet restore Tobot.slnx
 
-      - name: Build
+      - name: Build solution
         run: dotnet build Tobot.slnx --no-restore --configuration Release
 
-  maui:
-    name: Build MAUI (Mac Catalyst)
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
-
-      - name: Install MAUI workload
-        run: dotnet workload install maui
-
-      # The runner's Xcode may be newer than the one the workload pins; the compile itself is what we verify.
-      - name: Build
-        run: dotnet build src/Tobot.Maui -f net10.0-maccatalyst -r maccatalyst-arm64 -c Release -p:ValidateXcodeVersion=false
+      # The solution excludes the MAUI project from its build, so build it explicitly.
+      - name: Build MAUI (Android)
+        run: dotnet build src/Tobot.Maui -f net10.0-android --configuration Release

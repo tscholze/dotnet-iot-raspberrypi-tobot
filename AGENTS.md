@@ -11,7 +11,7 @@ Guidance for AI coding agents working on Tobot, a personal .NET 10 / C# robotics
 | `src/Tobot.Host` | Pi | ASP.NET Core: REST in `Endpoints/`, SignalR `TelemetryHub` (push only), broadcasters in `Services/`, Blazor pages in `Components/Pages`. `TobotController` is a DI singleton. |
 | `src/Tobot.Client` | any | `TobotApiClient` (REST) and `TobotTelemetryClient` (SignalR) used by CLI and MAUI. |
 | `src/Tobot.Cli` | Pi / dev | Console client (`dotnet run --project src/Tobot.Cli distance`). |
-| `src/Tobot.Maui` | phone/desktop | MAUI client; needs the MAUI workload, excluded from the default solution build. |
+| `src/Tobot.Maui` | phone/desktop | MAUI client (Android on any OS, Mac Catalyst only on macOS); needs the MAUI workload, excluded from the default solution build. |
 | `firmware/Tobot.PicoRemote` | Pico W | MicroPython remote, listed in the solution as files only (`secret.py` holds Wi-Fi config, never commit real secrets). |
 | `scripts/` | Pi | Autostart and kiosk shell scripts. |
 

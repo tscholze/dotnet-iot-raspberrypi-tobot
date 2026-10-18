@@ -2,7 +2,8 @@
 
   <!-- Cross-platform remote UI. Needs the MAUI workload: `dotnet workload install maui`. Not part of the default solution build. -->
   <PropertyGroup>
-    <TargetFrameworks>net10.0-android;net10.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net10.0-maccatalyst</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
