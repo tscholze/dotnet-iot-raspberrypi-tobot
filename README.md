@@ -23,6 +23,12 @@
 
 **Tobot** is a .NET robotics playground for Raspberry Pi, with a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers. Current hardware code focuses on HC-SR04 distance sensing and a separate PCA9685 Motor HAT driver.
 
+> **Architecture note:** This branch contains the **v4 architecture**, a rewrite
+> that differs from v2 and v3: one `Tobot.Host` app on the Pi owns the hardware and
+> exposes a REST API plus a SignalR telemetry hub, and the Razor UI, CLI, MAUI app
+> and remote firmware are all clients of it. Statements below that say "in v2" or
+> "in v3" describe the older architectures; use the `v2` tag for the finished v2 release.
+
 > **Tobot v4 direction:** The next major version will favor standard, widely
 > supported controls and components (such as standard servos and motor
 > controllers) over specialized add-on HATs like the Pimoroni Pan-Tilt HAT.
@@ -66,7 +72,7 @@ The software stack includes a `TobotController` for HC-SR04 distance sensing, a 
     <img src="_docs/bot-1-3.jpeg" alt="Frame front" height="260" />
 </div>
 
-### Tobot.Web
+### Tobot.Web (v3; now `Tobot.Host`)
 <div align="center" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
     <img src="_docs/web-home-1.png" alt="Web remote home screen" height="260" />
 </div>
@@ -140,7 +146,7 @@ Tobot is built entirely on the **modern .NET ecosystem**, leveraging cutting-edg
 | **Real-time Communication** | SignalR                    | Bidirectional communication for live updates |
 | **Hardware Access**         | System.Device.Gpio NuGet   | Low-level GPIO, I2C, PWM control             |
 | **Operating System**        | Raspberry Pi OS (Bookworm) | Official, stock Raspberry Pi distribution    |
-| **System Telemetry**        | Tobot.Pi                   | Hostname, Wi‑Fi SSID/IP, temp, load, mem, disk, uptime, freq |
+| **System Telemetry**        | Tobot.Device (`Pi/`)       | Hostname, Wi‑Fi SSID/IP, temp, load, mem, disk, uptime, freq |
 
 **Why .NET?**
 - **Cross-platform**: Runs natively on ARM-based Raspberry Pi
@@ -199,15 +205,15 @@ A hardware library with:
 
 ### 🎮 ToBot CLI
 
-The `Tobot` project is the command-line entry point for the next version of
-ToBot. Its interactive shell currently supports `help`, `exit`, and `quit`.
+The `Tobot.Cli` project (`src/Tobot.Cli`) is a REST/SignalR client of `Tobot.Host`. It supports `distance`, `status`, `watch`, `help` and `exit`; set `TOBOT_URL` (default `http://localhost:5247`).
 The previous Explorer HAT demo is available in the [v2 release](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/releases/tag/v2).
 
-### 🌐 Tobot.Web Application
+### 🌐 Tobot.Host Application
 
 A modern web-based control interface featuring:
 
-- **SignalR Integration** - Real-time bidirectional communication
+- **REST API** - `GET /api/distance`, `GET /api/status` (no authentication yet; Microsoft Account SSO is planned)
+- **SignalR Telemetry** - Server-to-client push on `/hubs/telemetry`
 - **Live Updates** - Receive real-time distance and Pi status updates
 - **Interactive UI** - Clean, responsive Blazor interface
 - **Multi-Device Support** - Access from phones, tablets, or computers
@@ -223,7 +229,7 @@ A modern web-based control interface featuring:
 
 The MAUI GTK desktop example is part of the v2 release but is no longer included in v3. To view or run that code, check out the `v2` tag.
 
-### 🎮 Tobot.PicoRemote Application
+### 🎮 Tobot.PicoRemote Application (`firmware/Tobot.PicoRemote`)
 
 A wireless remote control firmware for the **Raspberry Pi Pico W** with **Pimoroni PicoKeypad**, enabling control of Tobot from a handheld 16-button wireless controller.
 
@@ -242,25 +248,25 @@ Requirements:
 - Pimoroni PicoKeypad (16 RGB backlit keys)
 - MicroPython with `picokeypad` library
 - WiFi credentials in `secret.py` (SSID and PASSWORD)
-- Network access to Tobot.Web application
+- Network access to Tobot.Host application
 
 Usage:
 ```bash
 # Configure WiFi credentials
-echo "SSID = 'your-wifi-name'" > Tobot.PicoRemote/secret.py
-echo "PASSWORD = 'your-wifi-password'" >> Tobot.PicoRemote/secret.py
+echo "SSID = 'your-wifi-name'" > firmware/Tobot.PicoRemote/secret.py
+echo "PASSWORD = 'your-wifi-password'" >> firmware/Tobot.PicoRemote/secret.py
 
 # Upload remote-control.py to Pico W via Thonny or similar
-# The firmware will auto-start and connect to your Tobot.Web instance
+# The firmware will auto-start and connect to your Tobot.Host instance
 ```
 
-Note: Update `REMOTE_HOST` and `REMOTE_PORT` in `remote-control.py` to match your Tobot.Web deployment.
+Note: Update `REMOTE_HOST` and `REMOTE_PORT` in `remote-control.py` to match your Tobot.Host deployment.
 
 ---
 
 ### 🖥️ Pi System Info
 
-The `Tobot.Pi` library exposes Raspberry Pi telemetry via `PiSystemInfo` and publishes periodic `PiStatusSnapshot` updates.
+The `Tobot.Device.Pi` namespace (in `Tobot.Device`) exposes Raspberry Pi telemetry via `PiSystemInfo` and publishes periodic `PiStatusSnapshot` updates.
 
 Highlights:
 - Hostname and Wi‑Fi details: SSID + primary Wi‑Fi IPv4
@@ -274,7 +280,7 @@ Highlights:
 Quick usage:
 
 ```csharp
-using Tobot.Pi;
+using Tobot.Device.Pi;
 
 // One-shot reads
 Console.WriteLine($"Host: {PiSystemInfo.GetHostName()}");
@@ -311,8 +317,9 @@ cd tobot
 # Build the solution
 dotnet build
 
-# Run the interactive CLI
-dotnet run --project Tobot
+# Run the host (on the Pi), then the CLI (anywhere)
+dotnet run --project src/Tobot.Host
+dotnet run --project src/Tobot.Cli
 ```
 
 ---
@@ -321,7 +328,7 @@ dotnet run --project Tobot
 
 All helper scripts live in `scripts/` at the project root.
 
-- `scripts/run-tobot-web-kiosk.sh`: Starts the `Tobot.Web` Blazor app and opens it in Firefox kiosk mode on the Raspberry Pi at `http://localhost:5247/bot`.
+- `scripts/run-tobot-web-kiosk.sh`: Starts the `Tobot.Host` Blazor app and opens it in Firefox kiosk mode on the Raspberry Pi at `http://localhost:5247/bot`.
 - `scripts/add-to-autostart.sh`: Installs a user systemd service (`tobot-web-kiosk.service`) that runs the kiosk script automatically after the graphical session starts.
 - `scripts/remove-from-autostart.sh`: Disables and removes the autostart user service.
 
@@ -362,37 +369,19 @@ Tobot follows a clean, modular architecture:
 
 ```
 Tobot/
-├── Tobot/                             Interactive CLI
-│   ├── Program.cs                     CLI entry point
-│   └── README.md                      CLI usage
-│
-├── Tobot.Device/                      Hardware driver library
-│   ├── MotorHat/                      Adafruit PCA9685 Motor HAT driver
-│   │   ├── MotorKit.cs                Motor and stepper controller
-│   │   ├── Motor/                     DC and stepper motor controls
-│   │   └── README.md                  Setup, examples, and API overview
-│   ├── HcSr04/                        Ultrasonic distance helpers
-│   │   └── HcSr04.cs                  High-level HC-SR04 manager
-│
-├── Tobot.Web/                         Web control interface
-│   ├── Program.cs                     ASP.NET Core application
-│   ├── Hubs/                          SignalR hubs
-│   │   ├── TobotHub.cs                Main control hub
-│   │   └── TobotHubEvents.cs          Event constants
-│   └── Components/                    Blazor UI components
-│       └── Pages/                     Web pages
-│           ├── Simple.razor           Styled control interface
-│           ├── Remote.razor           URL-triggered control interface
-│           └── Bot.razor              Animated reactive eyes
-│
-├── Tobot.Pi/                          Raspberry Pi system telemetry library
-│   ├── PiSystemInfo.cs                Host/IP (Wi‑Fi), SSID, CPU temp, load avg, memory, disk (GiB), uptime, CPU freq
-│   └── PiStatusSnapshot.cs            DTO for periodic status snapshots + events
-│
-└── Tobot.PicoRemote/                  Pico W wireless remote firmware
-    ├── remote-control.py              Main firmware (MicroPython)
-    └── secret.py.example              WiFi credentials template
+├── src/
+│   ├── Tobot.Shared/      Models, API contract (ITobotApi), route + hub event constants (everywhere)
+│   ├── Tobot.Device/      Pi only: HcSr04/, MotorHat/, Pi/ (PiSystemInfo), TobotController
+│   ├── Tobot.Host/        Pi only: REST endpoints, SignalR TelemetryHub, background broadcasters, Blazor UI
+│   ├── Tobot.Client/      Typed REST + SignalR client (CLI, MAUI)
+│   ├── Tobot.Cli/         Console client (`tobot`)
+│   └── Tobot.Maui/        Cross-platform client (needs MAUI workload; excluded from default build)
+├── firmware/
+│   └── Tobot.PicoRemote/  Pico W MicroPython remote (listed in the solution, not compiled)
+└── scripts/               Pi autostart and kiosk scripts
 ```
+
+Dependencies: `Host` -> `Device`, `Shared`; `Cli`/`Maui` -> `Client` -> `Shared`. Clients never reference hardware code.
 
 ### Key Design Principles
 
@@ -419,7 +408,7 @@ kit.Motor1.Forward(0.6);
 kit.Motor1.Stop();
 ```
 
-See the [MotorKit setup guide and DC/stepper examples](Tobot.Device/MotorHat/README.md)
+See the [MotorKit setup guide and DC/stepper examples](src/Tobot.Device/MotorHat/README.md)
 for hardware setup, configuration, safe cleanup, and shared-channel details.
 
 ### 📐 Ultrasonic Distance (HC-SR04)
@@ -442,8 +431,8 @@ else
 
 | Document                                                                                             | Description            |
 | ---------------------------------------------------------------------------------------------------- | ---------------------- |
-| [Tobot/README.md](Tobot/README.md)                                                                   | CLI overview           |
-| [Tobot.Device/MotorHat/README.md](Tobot.Device/MotorHat/README.md) | Motor HAT setup and API reference |
+| [src/Tobot.Cli/README.md](src/Tobot.Cli/README.md)                                                                   | CLI overview           |
+| [Tobot.Device/MotorHat/README.md](src/Tobot.Device/MotorHat/README.md) | Motor HAT setup and API reference |
 
 ---
 
@@ -458,7 +447,7 @@ The previous Explorer HAT demo application is available in the [v2 release](http
 ## 🔧 Hardware Specifications
 
 For PCA9685 Motor HAT wiring, configuration, and pin details, see the
-[MotorKit guide](Tobot.Device/MotorHat/README.md).
+[MotorKit guide](src/Tobot.Device/MotorHat/README.md).
 
 ## ⚙️ Advanced Usage
 
@@ -597,7 +586,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 ```bash
 git clone https://github.com/yourusername/tobot.git
 cd tobot
-dotnet run --project Tobot
+dotnet run --project src/Tobot.Host
 ```
 
 **Ready to build something amazing?** The future of robotics is .NET! ???
@@ -608,6 +597,6 @@ dotnet run --project Tobot
 
 **Made with ❤️ for makers, educators, and robotics enthusiasts**
 
-[⭐ Star this repo](https://github.com/yourusername/tobot) | [📚 Read the docs](Tobot/README.md)
+[⭐ Star this repo](https://github.com/yourusername/tobot) | [📚 Read the docs](src/Tobot.Cli/README.md)
 
 </div>

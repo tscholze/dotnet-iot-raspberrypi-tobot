@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Console app; talks to Tobot.Host over the network, so it runs on the Pi or any dev machine. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>tobot</AssemblyName>
+    <RootNamespace>Tobot.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tobot.Client\Tobot.Client.csproj" />
+  </ItemGroup>
+
+</Project>

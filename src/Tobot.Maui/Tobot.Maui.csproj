@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cross-platform remote UI. Needs the MAUI workload: `dotnet workload install maui`. Not part of the default solution build. -->
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android;net10.0-maccatalyst</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <RootNamespace>Tobot.Maui</RootNamespace>
+    <ApplicationTitle>Tobot</ApplicationTitle>
+    <ApplicationId>de.tscholze.tobot</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tobot.Client\Tobot.Client.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,16 +4,18 @@ Guidance for AI coding agents working on Tobot, a personal .NET 10 / C# robotics
 
 ## Solution layout (`Tobot.slnx`)
 
-| Project | Purpose |
-|---|---|
-| `Tobot.Device` | Hardware library. `HcSr04/` and `MotorHat/`. `TobotController` manages a shared `GpioController`, HC-SR04 distance sensor, and Rx distance observable. |
-| `Tobot.Pi` | Pi system info (`PiSystemInfo`, `PiStatusSnapshot`). |
-| `Tobot.Web` | Blazor Server (interactive) + SignalR hub `/tobothub`. Pages in `Components/Pages`, hub in `Hubs/`, background broadcasters in `Services/`. `TobotController` is a DI singleton. |
-| `Tobot` | Interactive CLI (`dotnet run --project Tobot check`). |
-| `Tobot.PicoRemote` | MicroPython remote for a Pico (not in the solution; `secret.py` holds Wi-Fi config, never commit real secrets). |
-| `scripts/` | Pi autostart and kiosk shell scripts. |
+| Project | Runs on | Purpose |
+|---|---|---|
+| `src/Tobot.Shared` | everywhere | Hardware-free models (`DistanceReading`, `PiStatusSummary`, `PiStatusSnapshot`), `ITobotApi`, `TobotRoutes`, `TobotHubEvents`. |
+| `src/Tobot.Device` | Pi | Hardware: `HcSr04/`, `MotorHat/`, `Pi/` (`PiSystemInfo`), `TobotController` (shared `GpioController`, distance Rx observable). |
+| `src/Tobot.Host` | Pi | ASP.NET Core: REST in `Endpoints/`, SignalR `TelemetryHub` (push only), broadcasters in `Services/`, Blazor pages in `Components/Pages`. `TobotController` is a DI singleton. |
+| `src/Tobot.Client` | any | `TobotApiClient` (REST) and `TobotTelemetryClient` (SignalR) used by CLI and MAUI. |
+| `src/Tobot.Cli` | Pi / dev | Console client (`dotnet run --project src/Tobot.Cli distance`). |
+| `src/Tobot.Maui` | phone/desktop | MAUI client; needs the MAUI workload, excluded from the default solution build. |
+| `firmware/Tobot.PicoRemote` | Pico W | MicroPython remote, listed in the solution as files only (`secret.py` holds Wi-Fi config, never commit real secrets). |
+| `scripts/` | Pi | Autostart and kiosk shell scripts. |
 
-Dependencies flow: `Tobot` / `Tobot.Web` -> `Tobot.Device`, `Tobot.Pi`. Keep hardware code out of the web project; add it to `Tobot.Device` and expose via `TobotController` or the hub.
+Dependencies: `Host` -> `Device`, `Shared`; `Cli`/`Maui` -> `Client` -> `Shared`. Keep hardware code in `Tobot.Device` only; clients must never reference it. Commands/queries are REST endpoints (routes in `TobotRoutes`); SignalR is only for server-to-client pushes. The API has no authentication yet (Microsoft Account SSO planned).
 
 ## Build and verify
 
@@ -27,8 +29,8 @@ Dependencies flow: `Tobot` / `Tobot.Web` -> `Tobot.Device`, `Tobot.Pi`. Keep har
 - Use `#region` blocks to group members (e.g. `Private Fields`, `Motor Control`).
 - File-scoped namespaces; one type per file; folder = functional package.
 - Collections expose indexers (`explorerHat.Motor[1]`); motor speed range is -100..+100.
-- Hardware is wrapped by `IDisposable` classes; dispose and stop motors on shutdown (see `ApplicationStopping` hook in `Tobot.Web/Program.cs`).
-- SignalR event names live as constants in `TobotHubEvents`; reuse them rather than string literals. Hub methods should broadcast state changes via `Clients.All`.
+- Hardware is wrapped by `IDisposable` classes; dispose and stop motors on shutdown (see `ApplicationStopping` hook in `src/Tobot.Host/Program.cs`).
+- SignalR event names live in `TobotHubEvents` and routes in `TobotRoutes` (Shared); reuse them rather than string literals. Broadcast from services via `IHubContext<TelemetryHub>`.
 - Distance reads use `TryReadDistance` (returns false on failure) and Rx `ObserveDistance`.
 - Third-party-derived code must keep its notice (`MotorHat/THIRD-PARTY-NOTICES.md`).
 
@@ -36,4 +38,4 @@ Dependencies flow: `Tobot` / `Tobot.Web` -> `Tobot.Device`, `Tobot.Pi`. Keep har
 
 - Pan-Tilt HAT support was intentionally removed; do not reintroduce it. The v4 direction favors standard servos and motor controllers over specialty HATs.
 - `tobot-web.log` is a runtime artifact; do not edit it.
-- Update the relevant README / package docs when changing public APIs.
+- Directory.Build.props turns missing XML docs (CS1591) into errors. Update the relevant README / package docs when changing public APIs.

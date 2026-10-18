@@ -446,3 +446,6 @@ _build/
 # TestResults/
 # *.received.txt
 Tobot.PicoRemote/secret.py
+
+# Runtime log of the kiosk script
+tobot-web.log

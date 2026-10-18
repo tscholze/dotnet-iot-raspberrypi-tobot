@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Remove Tobot.Web kiosk autostart by disabling and deleting the user systemd unit.
+# Remove Tobot.Host kiosk autostart by disabling and deleting the user systemd unit.
 
 SERVICE_NAME="tobot-web-kiosk.service"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
