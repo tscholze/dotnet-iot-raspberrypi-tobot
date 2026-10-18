@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run Tobot.Web and open it in Firefox kiosk mode on Raspberry Pi
+# Run Tobot.Host and open it in Firefox kiosk mode on Raspberry Pi
 #
 # This script:
 #   - Binds ASP.NET Core to 0.0.0.0:5247
@@ -41,15 +41,15 @@ else
 fi
 
 # Start the web app
-echo "Starting Tobot.Web on ${ASPNETCORE_URLS} ..."
+echo "Starting Tobot.Host on ${ASPNETCORE_URLS} ..."
 DOTNET_LOG="./tobot-web.log"
 # Start in background; capture PID
-( set -x; dotnet run --project Tobot.Web ) >"${DOTNET_LOG}" 2>&1 &
+( set -x; dotnet run --project src/Tobot.Host ) >"${DOTNET_LOG}" 2>&1 &
 DOTNET_PID=$!
 
 # Clean up on exit
 cleanup() {
-  echo "Stopping Tobot.Web (PID ${DOTNET_PID}) ..."
+  echo "Stopping Tobot.Host (PID ${DOTNET_PID}) ..."
   kill ${DOTNET_PID} >/dev/null 2>&1 || true
   # Try to close Firefox gracefully
   pkill -f "${FIREFOX_BIN} .*${RELATIVE_PAGE}" >/dev/null 2>&1 || true
@@ -63,7 +63,7 @@ until curl -fsS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; do
   ATTEMPTS=$((ATTEMPTS+1))
   if [ ${ATTEMPTS} -gt 120 ]; then
     echo
-    echo "Timeout waiting for Tobot.Web to start. See ${DOTNET_LOG}." >&2
+    echo "Timeout waiting for Tobot.Host to start. See ${DOTNET_LOG}." >&2
     exit 1
   fi
   echo -n "."

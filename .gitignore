@@ -412,7 +412,7 @@ hardware.config
 device.config
 
 # Pico Remote WiFi credentials (sensitive)
-Tobot.PicoRemote/secret.py
+firmware/Tobot.PicoRemote/secret.py
 
 ## User-specific files
 
@@ -445,4 +445,7 @@ _build/
 # Project-specific ignores (add custom patterns below)
 # TestResults/
 # *.received.txt
-Tobot.PicoRemote/secret.py
+firmware/Tobot.PicoRemote/secret.py
+
+# Runtime log of the kiosk script
+tobot-web.log

@@ -6,25 +6,40 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Restore & Build
+    name: Restore & Build (all projects incl. MAUI Android)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      # .NET 10 is still in preview — include-prerelease ensures the SDK is found.
-      # Remove include-prerelease once .NET 10 reaches GA.
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.x'
-          include-prerelease: true
+          global-json-file: global.json
+
+      # Android-only MAUI builds on Linux; the runner already ships a JDK and the Android SDK.
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
 
       - name: Restore
         run: dotnet restore Tobot.slnx
 
-      - name: Build
+      - name: Build solution
         run: dotnet build Tobot.slnx --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --solution Tobot.slnx --no-build --configuration Release
+
+      # The solution excludes the MAUI project from its build, so build it explicitly.
+      - name: Build MAUI (Android)
+        run: dotnet build src/Tobot.Maui -f net10.0-android -r android-arm64 --configuration Release

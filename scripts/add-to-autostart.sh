@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Add Tobot.Web kiosk to autostart using a user systemd service.
+# Add Tobot.Host kiosk to autostart using a user systemd service.
 # This creates and enables ~/.config/systemd/user/tobot-web-kiosk.service
 # which runs scripts/run-tobot-web-kiosk.sh after the graphical session starts.
 
@@ -22,7 +22,7 @@ UNIT_FILE="${UNIT_DIR}/${SERVICE_NAME}"
 
 cat >"${UNIT_FILE}" <<EOF
 [Unit]
-Description=Tobot Web Kiosk (user session)
+Description=Tobot.Host Kiosk (user session)
 After=graphical-session.target network-online.target
 Wants=graphical-session.target network-online.target
 

@@ -72,7 +72,7 @@ We welcome contributions in many forms:
 3. **Build and test**
    ```bash
    dotnet build
-   dotnet run --project Tobot check
+   dotnet run --project src/Tobot.Cli status
    ```
 
 ## 📋 Contribution Guidelines
@@ -286,7 +286,7 @@ When adding new functionality:
 If your feature fits an existing hardware package:
 
 ```
-Tobot.Device/[Package]/
+src/Tobot.Device/[Package]/
     [Package]/
     ??? YourNewClass.cs
     ??? YourNewCollection.cs  (if needed)
@@ -297,7 +297,7 @@ Tobot.Device/[Package]/
 For significant new functionality:
 
 ```
-Tobot.Device/NewFeature/
+src/Tobot.Device/NewFeature/
     NewFeature/
     ??? NewFeature.cs
     ??? NewFeatureCollection.cs
@@ -342,13 +342,13 @@ We're building a comprehensive test suite. When it's ready:
 
 When adding features, update:
 - Main [README.md](README.md) - Add to features list
-- [Tobot/README.md](Tobot/README.md) - Add usage examples
+- [src/Tobot.Cli/README.md](src/Tobot.Cli/README.md) - Add usage examples
 - The relevant hardware package README - API reference
 
 ### Examples
 
 Add examples to:
-- `Tobot/Program.cs` - Interactive demos
+- `src/Tobot.Cli/Program.cs` - Interactive demos
 - The relevant hardware package - Code samples
 - Documentation files - Usage scenarios
 

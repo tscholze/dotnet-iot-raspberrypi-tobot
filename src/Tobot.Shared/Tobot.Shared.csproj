@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hardware-free models, contracts and constants shared by every Tobot app. -->
+  <PropertyGroup>
+    <RootNamespace>Tobot.Shared</RootNamespace>
+  </PropertyGroup>
+
+</Project>
