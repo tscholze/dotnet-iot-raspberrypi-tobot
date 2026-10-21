@@ -1,8 +1,8 @@
 ![Avatar](_docs/avatar_3.png)
 
-# 🤖 Tobot - .NET Robotics Platform for Raspberry Pi
+# 🤖 Tobot - Build a Robot with .NET
 
-> **Modern robotics meets modern .NET** - A C# driver and CLI platform for Raspberry Pi robotics
+> **A hands-on .NET robotics playground** for Raspberry Pi sensors, motor control, and remote interfaces.
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 13](https://img.shields.io/badge/C%23-13.0-239120?logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -19,9 +19,9 @@
 
 ---
 
-## ? What is Tobot?
+## What is Tobot?
 
-**Tobot** is a .NET robotics playground for Raspberry Pi, with a **fully custom-designed chassis** that you can print and assemble yourself on compact 3D printers. Current hardware code focuses on HC-SR04 distance sensing and a separate PCA9685 Motor HAT driver.
+Tobot is a personal robotics project for exploring what C# and .NET can do on a Raspberry Pi. Start with a real HC-SR04 distance sensor, see its readings in a web interface or CLI, and add motor control with a compatible PCA9685 Motor HAT when you are ready.
 
 > **Architecture note:** This branch contains the **v4 architecture**, a rewrite
 > that differs from v2 and v3: one `Tobot.Host` app on the Pi owns the hardware and
@@ -35,19 +35,15 @@
 > The Pan-Tilt HAT driver and its dependent demos have been removed from this
 > project as part of that transition.
 
-At its core, Tobot is designed to run on **two Raspberry Pi boards** working in tandem—providing ample compute power for computer vision, machine learning, autonomous navigation, and real-time control. One Pi handles hardware interfacing and motor control, while the second can focus on AI workloads, web services, or video processing.
-
-The software stack includes a `TobotController` for HC-SR04 distance sensing, a standalone PCA9685 Motor HAT driver, and a Blazor web interface for sensor and Pi status.
+The `Tobot.Host` application brings the hardware and interface together on the Pi. Other devices can use its REST API, follow live updates over SignalR, or open the Blazor web interface.
 
 ### ✨ Why Tobot?
 
-- **⚡ Modern C#** - Leverage C# 13 and .NET 10 features for robotics
-- **📦 Package-Based Architecture** - Logical organization by functionality
-- **📚 Comprehensive Documentation** - XML docs on every member, extensive guides
-- **⌨️ Command-Line Interface** - An interactive starting point for the next ToBot
-- **🔌 Hardware APIs** - Focused APIs for distance sensing and PCA9685 motor control
-- **✅ Production Ready** - Robust error handling and resource management
-- **🎓 Educational** - Perfect for learning robotics and C# together
+- **⚡ Modern .NET** - Build with C# 13 and .NET 10 on Raspberry Pi
+- **📡 Real hardware** - Read distance from an HC-SR04 ultrasonic sensor
+- **🚗 Optional motor control** - Drive DC or stepper motors with a compatible PCA9685 Motor HAT
+- **🌐 One host, many clients** - Use the web UI, CLI, MAUI app, or Pico W remote
+- **🎓 Built for learning** - Explore robotics and software in an evolving hobby project
 
 ---
 
@@ -89,11 +85,11 @@ The software stack includes a `TobotController` for HC-SR04 distance sensing, a 
 </div>
 ---
 
-## What Tobot is Based On
+## What Tobot is built around
 
 ### 🏗️ Chassis
 
-The Tobot chassis is **fully custom designed** and optimized for accessibility and ease of manufacturing. All parts are specifically engineered to fit on **small 3D printers** like the **BambuLab A1 mini**, making it possible to build your own robot without needing industrial-scale equipment.
+The repository includes a custom chassis design intended to be accessible to makers with compact 3D printers.
 
 **Key Features:**
 - Optimized for compact bed sizes (180×180mm print area)
@@ -102,39 +98,30 @@ The Tobot chassis is **fully custom designed** and optimized for accessibility a
 - Modular design for easy assembly and modifications
 - All STL files available in the repository for customization
 
-Whether you're a hobbyist with a small printer or an educator setting up a classroom fleet, the Tobot chassis is designed to be practical, affordable, and sustainable.
+The chassis is a project design, not a guaranteed bill of materials for the current software setup. The exact current chassis and battery configuration is **TBD**.
 
 ---
 
 ### 🔧 Hardware
 
-Tobot's hardware foundation is built on exceptional components from the amazing team at [**Pimoroni**](https://shop.pimoroni.com/), a company renowned for their creativity, quality, and maker-friendly products.
+The current hardware implementation is deliberately focused: distance sensing is built around an **HC-SR04 ultrasonic sensor**. Motor control is available through a separate, optional **PCA9685-based Motor HAT**. The current setup does not require a pHAT Stack or Blinkt.
 
-**Core Components:**
+| Component | Role | Status |
+| --- | --- | --- |
+| Raspberry Pi with GPIO and I2C | Runs `Tobot.Host` and connects to the hardware | Required |
+| HC-SR04 ultrasonic sensor | Provides distance readings through `Tobot.Device` | Implemented; default trigger and echo pins are GPIO 12 and 22 |
+| Compatible PCA9685 Motor HAT | Controls DC or stepper motors | Optional; see the [MotorKit setup guide](src/Tobot.Device/MotorHat/README.md) |
+| Motor power supply and wiring | Powers and connects the motors and sensor | Required for motor control; exact build wiring is **TBD** |
 
-| Component                                                                                                                            | Description                                                           | Shop Link                                                                                                                 |
-| ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **[Adafruit Motor HAT](https://www.adafruit.com/product/2348)**                                                                      | PCA9685-based DC and stepper motor control                            | [Product](https://www.adafruit.com/product/2348)                                                                            |
-| **[pHAT Stack HAT](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC)** | Stacking connector for adding multiple HATs                           | [Buy Now](https://shop.pimoroni.com/products/phat-stack?srsltid=AfmBOooMtYout7YyKwNvmt7mzZK2IQPd3pf0JJF4NLPTJSem_P65BVwC) |
-| **[Blinkt!](https://shop.pimoroni.com/products/blinkt)**                                                                             | 8 RGB LED strip for visual feedback                                   | [Buy Now](https://shop.pimoroni.com/products/blinkt)                                                                      |
+The Motor HAT needs a suitable motor power supply; the Pi's I2C connection does not power the motors. For HC-SR04 wiring, protect the Pi's 3.3 V GPIO by level-shifting the sensor's ECHO signal. Detailed wiring diagrams for a complete robot build are **TBD**.
 
-**Additional Components:**
-- HC-SR04 ultrasonic distance sensor
-- Standard jumper wires for flexible connections
-- Raspberry Pi (any 40-pin GPIO model)
-- 5V power supply (adequate for servos and motors)
-
-**Current Setup:**  
-The prototype uses **jumper wires** to connect components, providing flexibility during development and easy debugging. Future iterations may include custom PCBs or ribbon cable solutions for cleaner integration.
-
-**Why Pimoroni?**  
-Pimoroni's products are thoughtfully designed, thoroughly documented, and backed by an active community. Their commitment to open-source hardware and education aligns perfectly with Tobot's mission.
+Older hardware demos and architectures are documented in the [`v2` tag](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/tree/v2).
 
 ---
 
 ### 💻 Software
 
-Tobot is built entirely on the **modern .NET ecosystem**, leveraging cutting-edge frameworks and libraries to deliver a professional, maintainable, and powerful robotics platform.
+The core Tobot platform uses the **modern .NET ecosystem**, with a small MicroPython firmware client for the optional Pico W remote.
 
 **Technology Stack:**
 
@@ -142,9 +129,9 @@ Tobot is built entirely on the **modern .NET ecosystem**, leveraging cutting-edg
 | --------------------------- | -------------------------- | -------------------------------------------- |
 | **Framework**               | .NET 10                    | Modern runtime with C# 13 language features  |
 | **Web UI**                  | ASP.NET Core Blazor        | Interactive, real-time web interface         |
-| **Desktop UI (Linux)**      | Not included in v3         | The .NET MAUI + GTK example is available in v2 |
-| **Real-time Communication** | SignalR                    | Bidirectional communication for live updates |
-| **Hardware Access**         | System.Device.Gpio NuGet   | Low-level GPIO, I2C, PWM control             |
+| **Mobile / desktop client** | .NET MAUI                  | Android and Mac Catalyst client               |
+| **Real-time Communication** | SignalR                    | Server-to-client live telemetry               |
+| **Hardware Access**         | .NET IoT bindings          | GPIO and I2C access for supported hardware    |
 | **Operating System**        | Raspberry Pi OS (Bookworm) | Official, stock Raspberry Pi distribution    |
 | **System Telemetry**        | Tobot.Device (`Pi/`)       | Hostname, Wi‑Fi SSID/IP, temp, load, mem, disk, uptime, freq |
 
@@ -225,9 +212,9 @@ A modern web-based control interface featuring:
 - Distance sensor visualization
 - Responsive mood changes based on sensor data
 
-### 🖥️ MAUI GTK Example
+### 📱 MAUI Client
 
-The MAUI GTK desktop example is part of the v2 release but is no longer included in v3. To view or run that code, check out the `v2` tag.
+The current `Tobot.Maui` project is a client of `Tobot.Host`, not a direct hardware driver. It targets Android and Mac Catalyst (on macOS); building it requires the MAUI workload. The older GTK example is available in the [`v2` tag](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/tree/v2).
 
 ### 🎮 Tobot.PicoRemote Application (`firmware/Tobot.PicoRemote`)
 
@@ -311,8 +298,8 @@ PiSystemInfo.StartTemperaturePublishing();
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tobot.git
-cd tobot
+git clone https://github.com/tscholze/dotnet-iot-raspberrypi-tobot.git
+cd dotnet-iot-raspberrypi-tobot
 
 # Build the solution and run the tests
 dotnet build
@@ -579,15 +566,15 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 - **Hardware**: [Adafruit Motor HAT](https://www.adafruit.com/product/2348)
 - **Documentation**: [.NET IoT Libraries](https://github.com/dotnet/iot)
 - **Community**: [Raspberry Pi Forums](https://forums.raspberrypi.com/)
-- **Support**: [Open an Issue](https://github.com/yourusername/tobot/issues)
+- **Support**: [Open an Issue](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot/issues)
 
 ---
 
 ## 🚀 Get Started Now!
 
 ```bash
-git clone https://github.com/yourusername/tobot.git
-cd tobot
+git clone https://github.com/tscholze/dotnet-iot-raspberrypi-tobot.git
+cd dotnet-iot-raspberrypi-tobot
 dotnet run --project src/Tobot.Host
 ```
 
@@ -599,6 +586,6 @@ dotnet run --project src/Tobot.Host
 
 **Made with ❤️ for makers, educators, and robotics enthusiasts**
 
-[⭐ Star this repo](https://github.com/yourusername/tobot) | [📚 Read the docs](src/Tobot.Cli/README.md)
+[⭐ Star this repo](https://github.com/tscholze/dotnet-iot-raspberrypi-tobot) | [📚 Read the docs](src/Tobot.Cli/README.md)
 
 </div>
